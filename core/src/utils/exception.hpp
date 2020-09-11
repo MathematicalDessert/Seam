@@ -18,4 +18,17 @@ namespace seam::core::utils
 			std::runtime_error(msg), position_({ line, column })
 		{}
 	};
+
+	struct parser_exception final : std::runtime_error
+	{
+		position position_;
+
+		explicit parser_exception(const position position, const std::string& msg) :
+			std::runtime_error(msg), position_(position)
+		{}
+
+		explicit parser_exception(const std::size_t line, const std::size_t column, const std::string& msg) :
+			std::runtime_error(msg), position_({ line, column })
+		{}
+	};
 }

@@ -40,7 +40,8 @@ namespace seam::core::lexer
 	public:
 		explicit lexer(const std::string_view& source);
 
-		lexeme_type peek_lexeme();
+		lexeme& peek_lexeme();
+		lexeme& current_lexeme();
 		lexeme& next_lexeme();
 	};
 }

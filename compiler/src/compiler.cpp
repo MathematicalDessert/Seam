@@ -1,28 +1,36 @@
 #include <iostream>
 
 #include "lexer/lexer.hpp"
+#include "parser/parser.hpp"
 #include "utils/exception.hpp"
 
 int main()
 {
 	try
 	{
-		seam::core::lexer::lexer analyzer(R"(
-import io
-
-io.println("hello")
+		seam::core::parser::parser parser(R"(
+fn asd(a: i32) -> i32 @constructor
+{
+	print(a)
+	b := 1
+	{
+		print(a)
+		print(b)
+		c := 4
+	}
+	return b + 2
+}
 )");
 
-		auto current_lexeme = analyzer.next_lexeme();
-		while (current_lexeme.type != seam::core::lexer::lexeme_type::eof)
-		{
-			std::cout << current_lexeme.to_string().c_str() << std::endl;
-			current_lexeme = analyzer.next_lexeme();
-		}
+		parser.parse();
 	}
 	catch (seam::core::utils::lexical_exception& error)
 	{
-		printf("%llu:%llu: %s\n", error.position_.line, error.position_.column, error.what());
+		printf("[LEXER ERROR] %llu:%llu: %s\n", error.position_.line, error.position_.column, error.what());
+	}
+	catch (seam::core::utils::parser_exception& error)
+	{
+		printf("[PARSER ERROR] %llu:%llu: %s\n", error.position_.line, error.position_.column, error.what());
 	}
 	return 0;
 }

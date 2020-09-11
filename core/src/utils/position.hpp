@@ -13,4 +13,10 @@ namespace seam::core::utils
 			line(line), column(column)
 		{}
 	};
+
+	struct position_range
+	{
+		position start;
+		position end;
+	};
 }

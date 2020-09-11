@@ -13,13 +13,40 @@ namespace seam::core::lexer
 	{
 		{ "fn", lexeme_type::keyword_fn },
 		{ "import", lexeme_type::keyword_import },
+		{ "true", lexeme_type::keyword_true },
+		{ "false", lexeme_type::keyword_false },
+		{ "return", lexeme_type::keyword_return },
 	};
 
 	const lexeme_map_t symbol_map
 	{
 		{ ".", lexeme_type::symbol_separator },
+		{ ",", lexeme_type::symbol_comma },
+		{ ":", lexeme_type::symbol_colon },
+		{ "?", lexeme_type::symbol_question_mark },
+		{ "->", lexeme_type::symbol_arrow },
+		{ "{", lexeme_type::symbol_open_brace },
+		{ "}", lexeme_type::symbol_close_brace },
 		{ "(", lexeme_type::symbol_open_parenthesis },
 		{ ")", lexeme_type::symbol_close_parenthesis },
+		{ "=", lexeme_type::symbol_assign },
+		{ ":=", lexeme_type::symbol_colon_assign },
+		{ "+", lexeme_type::symbol_add },
+		{ "+=", lexeme_type::symbol_add_assign },
+		{ "-", lexeme_type::symbol_subtract },
+		{ "-=", lexeme_type::symbol_subtract },
+		{ "*", lexeme_type::symbol_multiply },
+		{ "*=", lexeme_type::symbol_multiply_assign },
+		{ "%", lexeme_type::symbol_mod },
+		{ "==", lexeme_type::symbol_eq },
+		{ "!=", lexeme_type::symbol_neq },
+		{ "<", lexeme_type::symbol_lt },
+		{ "<=", lexeme_type::symbol_lt_eq },
+		{ ">", lexeme_type::symbol_gt },
+		{ ">=", lexeme_type::symbol_gt_eq },
+		{ "&&", lexeme_type::symbol_and },
+		{ "||", lexeme_type::symbol_or },
+		{ "!", lexeme_type::symbol_not },
 	};
 
 	const std::unordered_set<std::string> attributes = { "constructor", "export" };
@@ -280,6 +307,8 @@ namespace seam::core::lexer
 	{
 		skip_whitespace();
 
+		ref.position = current_position();
+		
 		switch (peek_character())
 		{
 			case eof_character:
@@ -301,11 +330,11 @@ namespace seam::core::lexer
 				if (next_character == '=')
 				{
 					consume_character();
-					ref.type = lexeme_type::op_divide_assign;
+					ref.type = lexeme_type::symbol_divide_assign;
 					break;
 				}
 					
-				ref.type = lexeme_type::op_divide;
+				ref.type = lexeme_type::symbol_divide;
 				break;
 			}
 			case '"':
@@ -337,15 +366,21 @@ namespace seam::core::lexer
 		source_(source)
 	{}
 	
-	lexeme_type lexer::peek_lexeme()
+	lexeme& lexer::peek_lexeme()
 	{
 		if (!peeked_lexeme_)
 		{
+			peeked_lexeme_ = lexeme{};
 			lex(*peeked_lexeme_);
 		}
-		return peeked_lexeme_.value().type;
+		return peeked_lexeme_.value();
 	}
 
+	lexeme& lexer::current_lexeme()
+	{
+		return *current_lexeme_;
+	}
+	
 	lexeme& lexer::next_lexeme()
 	{
 		if (peeked_lexeme_)
