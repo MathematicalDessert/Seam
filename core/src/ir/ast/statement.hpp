@@ -126,6 +126,38 @@ namespace seam::core::ir::ast
 			{}
 		};
 
+		struct type_declaration : declaration
+		{
+			std::string name;
+
+			explicit type_declaration(const utils::position_range range, std::string name) :
+				declaration(range), name(std::move(name))
+			{}
+		};
+
+		struct type_alias_declaration final: type_declaration
+		{
+			std::shared_ptr<types::type> aliased_type;
+
+			void visit(visitor* vst) override;
+
+			explicit type_alias_declaration(const utils::position_range range, std::string name, std::shared_ptr<types::type> aliased_type) :
+				type_declaration(range, std::move(name)), aliased_type(aliased_type)
+			{}
+		};
+
+		struct type_class_definition final : type_declaration
+		{
+			parameter_list fields;
+			std::unique_ptr<declaration_block> body;
+			
+			void visit(visitor* vst) override;
+
+			explicit type_class_definition(const utils::position_range range, std::string name, parameter_list fields, std::unique_ptr<declaration_block> body) :
+				type_declaration(range, std::move(name)), fields(std::move(fields)), body(std::move(body))
+			{}
+		};
+
 		struct variable_declaration final : statement
 		{
 			std::string variable_name;
@@ -158,6 +190,32 @@ namespace seam::core::ir::ast
 
 			explicit ret_stat(const utils::position_range range, std::unique_ptr<expression::expression> value) :
 				statement(range), value(std::move(value))
+			{}
+		};
+
+		struct while_stat final : statement
+		{
+			std::unique_ptr<expression::expression> condition;
+			std::unique_ptr<statement_block> body;
+
+			void visit(visitor* vst) override;
+
+			explicit while_stat(const utils::position_range range, std::unique_ptr<expression::expression> condition, std::unique_ptr<statement_block> body) :
+				statement(range), condition(std::move(condition)), body(std::move(body))
+			{}
+		};
+
+		struct if_stat final : statement
+		{
+			std::unique_ptr<expression::expression> condition;
+
+			std::unique_ptr<statement_block> body;
+			std::unique_ptr<statement_block> else_body;
+
+			void visit(visitor* vst) override;
+
+			explicit if_stat(const utils::position_range range, std::unique_ptr<expression::expression> condition, std::unique_ptr<statement_block> body, std::unique_ptr<statement_block> else_body) :
+				statement(range), condition(std::move(condition)), body(std::move(body)), else_body(std::move(else_body))
 			{}
 		};
 	}

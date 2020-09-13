@@ -18,7 +18,7 @@ namespace seam::core::parser
 		priority(const std::size_t priority) :
 			left(priority), right(priority) {}
 	};
-
+	 
 	const std::unordered_map<lexer::lexeme_type, priority> binary_priority
 	{
 		{ lexer::lexeme_type::symbol_add, 6 }, { lexer::lexeme_type::symbol_subtract, 6 },
@@ -69,12 +69,17 @@ namespace seam::core::parser
 	}
 
 	
-	std::shared_ptr<types::type> parser::parse_type()
+	std::shared_ptr<types::type> parser::parse_type(bool can_be_nullable)
 	{
 		const auto type_name = std::string{ expect(lexer::lexeme_type::identifier, true).value };
 		auto is_nullable = false;
 		if (lexer_.peek_lexeme().type == lexer::lexeme_type::symbol_question_mark)
 		{
+			if (!can_be_nullable)
+			{
+				throw utils::parser_exception{ lexer_.peek_lexeme().position, "this type cannot be nullable" };
+			}
+			
 			is_nullable = true;
 			lexer_.next_lexeme();
 		}
@@ -259,6 +264,73 @@ namespace seam::core::parser
 		return { std::move(expression), operator_type };
 	}
 
+	std::unique_ptr<ir::ast::statement::while_stat> parser::parse_while_statement()
+	{
+		const auto while_kw = lexer_.next_lexeme();
+
+		expect(lexer::lexeme_type::symbol_open_parenthesis, true);
+		auto condition = parse_expression().first;
+		expect(lexer::lexeme_type::symbol_close_parenthesis, true);
+
+		auto body = parse_statement_block();
+
+		return std::make_unique<ir::ast::statement::while_stat>(
+			generate_range(while_kw, lexer_.peek_lexeme()),
+			std::move(condition),
+			std::move(body));
+	}
+
+	std::unique_ptr<ir::ast::statement::if_stat> parser::parse_if_statement()
+	{
+		const auto if_kw = lexer_.next_lexeme();
+
+		expect(lexer::lexeme_type::symbol_open_parenthesis, true);
+		auto condition = parse_expression().first;
+		expect(lexer::lexeme_type::symbol_close_parenthesis, true);
+
+		auto body = parse_statement_block();
+
+		std::unique_ptr<ir::ast::statement::statement_block> else_body;
+
+		const auto next_lexeme = lexer_.peek_lexeme().type;
+		if (next_lexeme == lexer::lexeme_type::keyword_elseif)
+		{
+			ir::ast::statement::statement_list else_if_body;
+			else_if_body.emplace_back(parse_if_statement());
+			else_body = std::make_unique<ir::ast::statement::statement_block>(
+				generate_range(lexer_.peek_lexeme(), lexer_.peek_lexeme()),
+				std::move(else_if_body));
+		}
+		else if (next_lexeme == lexer::lexeme_type::keyword_else)
+		{
+			lexer_.next_lexeme();
+			else_body = parse_statement_block();
+
+			if (lexer_.peek_lexeme().type == lexer::lexeme_type::keyword_else)
+			{
+				throw utils::parser_exception{
+					lexer_.peek_lexeme().position,
+					"cannot have multiple else blocks",
+				};
+			}
+
+			if (lexer_.peek_lexeme().type == lexer::lexeme_type::keyword_elseif)
+			{
+				throw utils::parser_exception{
+					lexer_.peek_lexeme().position,
+					"elseif blocks cannot come before else blocks",
+				};
+			}
+		}
+
+		return std::make_unique<ir::ast::statement::if_stat>(
+			generate_range(if_kw, lexer_.peek_lexeme()),
+			std::move(condition),
+			std::move(body),
+			std::move(else_body)
+			);
+	}
+	
 	std::unique_ptr<ir::ast::statement::ret_stat> parser::parse_return_statement()
 	{
 		const auto return_keyword = lexer_.next_lexeme();
@@ -365,6 +437,16 @@ namespace seam::core::parser
 					body.emplace_back(parse_statement_block());
 					break;
 				}
+				case lexer::lexeme_type::keyword_while:
+				{
+					body.emplace_back(parse_while_statement());
+					break;
+				}
+				case lexer::lexeme_type::keyword_if:
+				{
+					body.emplace_back(parse_if_statement());
+					break;
+				}
 				case lexer::lexeme_type::keyword_return: // return statement
 				{
 					body.emplace_back(parse_return_statement());
@@ -438,6 +520,57 @@ namespace seam::core::parser
 			std::move(function_body));
 	}
 
+	std::unique_ptr<ir::ast::statement::type_declaration> parser::parse_type_declaration()
+	{
+		const auto& kw_lexeme = lexer_.next_lexeme(); // consume function keyword
+
+		auto type_name = std::string{ expect(lexer::lexeme_type::identifier, true).value };
+
+		if (lexer_.peek_lexeme().type == lexer::lexeme_type::symbol_assign) // alias
+		{
+			lexer_.next_lexeme();
+			return std::make_unique<ir::ast::statement::type_alias_declaration>(
+				generate_range(kw_lexeme, lexer_.peek_lexeme()),
+				std::move(type_name),
+				parse_type(false));
+		}
+
+		ir::ast::statement::parameter_list fields;
+		ir::ast::statement::declaration_list body;
+		
+		auto start_type_section = expect(lexer::lexeme_type::symbol_open_brace, true);
+		
+		while (lexer_.peek_lexeme().type != lexer::lexeme_type::symbol_close_brace)
+		{
+			if (lexer_.peek_lexeme().type == lexer::lexeme_type::identifier)
+			{
+				auto field_name = std::string{ lexer_.next_lexeme().value };
+
+				expect(lexer::lexeme_type::symbol_colon, true);
+
+				auto type = parse_type();
+
+				fields.push_back(std::make_unique<ir::ast::parameter>(
+					std::move(field_name),
+					std::move(type)));
+			}
+			else
+			{
+				body.emplace_back(parse_declaration());
+			}
+		}
+		
+		expect(lexer::lexeme_type::symbol_close_brace, true);
+
+		return std::make_unique<ir::ast::statement::type_class_definition>(
+			generate_range(kw_lexeme, lexer_.peek_lexeme()),
+			std::move(type_name),
+			std::move(fields),
+			std::make_unique<ir::ast::statement::declaration_block>(
+				generate_range(start_type_section, lexer_.peek_lexeme()),
+				std::move(body)));
+	}
+	
 	std::unique_ptr<ir::ast::statement::declaration> parser::parse_declaration()
 	{
 		const auto& lexeme = lexer_.peek_lexeme();
@@ -447,6 +580,10 @@ namespace seam::core::parser
 			case lexer::lexeme_type::keyword_fn:
 			{
 				return parse_function_definition();
+			}
+			case lexer::lexeme_type::keyword_type:
+			{
+				return parse_type_declaration();
 			}
 			default:
 			{

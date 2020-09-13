@@ -33,6 +33,11 @@ namespace seam::core::ir::ast::statement
 		}
 	}
 
+	void type_alias_declaration::visit(visitor* vst)
+	{
+		vst->visit(this);
+	}
+
 	void variable_declaration::visit(visitor* vst)
 	{
 		if (vst->visit(this))
@@ -41,6 +46,13 @@ namespace seam::core::ir::ast::statement
 		}
 	}
 
+	void type_class_definition::visit(visitor* vst)
+	{
+		if (vst->visit(this))
+		{
+			body->visit(vst);
+		}
+	}
 
 	void variable_assignment::visit(visitor* vst)
 	{
@@ -58,4 +70,22 @@ namespace seam::core::ir::ast::statement
 		}
 	}
 
+	void while_stat::visit(visitor* vst)
+	{
+		if (vst->visit(this))
+		{
+			condition->visit(vst);
+			body->visit(vst);
+		}
+	}
+
+	void if_stat::visit(visitor* vst)
+	{
+		if (vst->visit(this))
+		{
+			condition->visit(vst);
+			body->visit(vst);
+			else_body->visit(vst);
+		}
+	}
 }

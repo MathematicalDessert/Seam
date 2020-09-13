@@ -9,17 +9,43 @@ int main()
 	try
 	{
 		seam::core::parser::parser parser(R"(
-fn asd(a: i32) -> i32 @constructor
-{
-	print(a)
-	b := 1
-	{
-		print(a)
-		print(b)
-		c := 4
-	}
-	return b + 2
-}
+		type int = i32
+
+		type asdf
+		{
+			age: i32
+		}
+
+		fn asd(a: int) -> int @constructor
+		{
+			print(a)
+			b := 1
+			{
+				print(a)
+				print(b)
+				c := 4
+			}
+
+			if (a > 2)
+			{
+				print("wot")
+			}
+			elseif (a < 2)
+			{
+				print("hi")
+			}	
+			else
+			{
+				print("heya")
+			}
+
+			while (true)
+			{
+				print("Hi!")
+			}
+
+			return b + 2
+		}
 )");
 
 		parser.parse();

@@ -12,6 +12,11 @@ namespace seam::core::lexer
 	const lexeme_map_t keyword_map
 	{
 		{ "fn", lexeme_type::keyword_fn },
+		{ "type", lexeme_type::keyword_type },
+		{ "while", lexeme_type::keyword_while },
+		{ "if", lexeme_type::keyword_if },
+		{ "elseif", lexeme_type::keyword_elseif },
+		{ "else", lexeme_type::keyword_else },
 		{ "import", lexeme_type::keyword_import },
 		{ "true", lexeme_type::keyword_true },
 		{ "false", lexeme_type::keyword_false },
