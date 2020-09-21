@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -100,13 +101,13 @@ namespace seam::core::ir::ast
 			std::string name;
 			std::shared_ptr<types::type> return_type;
 			parameter_list parameters;
-			std::vector<std::string> attributes;
+			std::set<std::string> attributes;
 
 			explicit function_declaration(const utils::position_range range) :
 				declaration(range)
 			{}
 			
-			explicit function_declaration(const utils::position_range range, std::string function_name, std::shared_ptr<types::type> return_type, parameter_list parameters, std::vector<std::string> attributes) :
+			explicit function_declaration(const utils::position_range range, std::string function_name, std::shared_ptr<types::type> return_type, parameter_list parameters, std::set<std::string> attributes) :
 				declaration(range), name(std::move(function_name)), return_type(std::move(return_type)), parameters(std::move(parameters)), attributes(std::move(attributes))
 			{}
 		};
@@ -121,7 +122,7 @@ namespace seam::core::ir::ast
 				function_declaration(range)
 			{}
 			
-			explicit function_definition(const utils::position_range range, std::string function_name, std::shared_ptr<types::type> return_type, parameter_list parameters, std::vector<std::string> attributes, std::unique_ptr<statement_block> block) :
+			explicit function_definition(const utils::position_range range, std::string function_name, std::shared_ptr<types::type> return_type, parameter_list parameters, std::set<std::string> attributes, std::unique_ptr<statement_block> block) :
 				function_declaration(range, std::move(function_name), std::move(return_type), std::move(parameters), std::move(attributes)), block(std::move(block))
 			{}
 		};

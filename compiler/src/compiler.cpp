@@ -3,52 +3,23 @@
 #include "lexer/lexer.hpp"
 #include "parser/parser.hpp"
 #include "utils/exception.hpp"
+#include "module.hpp"
 
 int main()
 {
 	try
 	{
-		seam::core::parser::parser parser(R"(
-		type int = i32
-
-		type asdf
-		{
-			age: i32
-		}
-
-		fn asd(a: int) -> int @constructor
-		{
-			print(a)
-			b := 1
-			{
-				print(a)
-				print(b)
-				c := 4
-			}
-
-			if (a > 2)
-			{
-				print("wot")
-			}
-			elseif (a < 2)
-			{
-				print("hi")
-			}	
-			else
-			{
-				print("heya")
-			}
-
-			while (true)
-			{
-				print("Hi!")
-			}
-
-			return b + 2
-		}
-)");
-
-		parser.parse();
+		 auto main_module = std::make_unique< seam::core::module>("main",
+			R"(
+fn main() @constructor
+{
+	a: i32
+	a = 123
+}
+)"
+		);
+		
+		seam::core::parser::parser parser(main_module.get());
 	}
 	catch (seam::core::utils::lexical_exception& error)
 	{

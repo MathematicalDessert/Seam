@@ -14,11 +14,6 @@ add_library(core src/lexer/lexer.cpp
 				 src/debug/graphviz_visitor.cpp
 				 src/code_generation/code_generator.cpp)
 
-# Find the libraries that correspond to the LLVM components
-# that we wish to use
-llvm_map_components_to_libnames(LLVM_LIBS support core irreader ${LLVM_TARGETS_TO_BUILD})
-target_link_libraries(core ${LLVM_LIBS})
-
 install(TARGETS core
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)

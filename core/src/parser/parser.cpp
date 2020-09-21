@@ -2,6 +2,7 @@
 #include <unordered_map>
 
 #include "parser.hpp"
+#include "../module.hpp"
 #include "../utils/exception.hpp"
 
 namespace seam::core::parser
@@ -34,7 +35,7 @@ namespace seam::core::parser
 	// higher than any binary priority
 	constexpr std::size_t unary_priority = 8;
 	
-	utils::position_range generate_range(const lexer::lexeme& start, const lexer::lexeme& end)
+	utils::position_range parser::generate_range(const lexer::lexeme& start, const lexer::lexeme& end)
 	{
 		return { start.position, end.position };
 	}
@@ -53,6 +54,11 @@ namespace seam::core::parser
 		return current_lexeme;
 	}
 
+	void parser::exit_scope()
+	{
+		current_block_ = current_block_->parent;
+	}
+	
 	std::shared_ptr<ir::ast::variable> parser::get_variable_from_current_block(const std::string& variable_name) const
 	{
 		auto* current_block = current_block_;
@@ -69,7 +75,7 @@ namespace seam::core::parser
 	}
 
 	
-	std::shared_ptr<types::type> parser::parse_type(bool can_be_nullable)
+	std::shared_ptr<types::type> parser::parse_type(const bool can_be_nullable)
 	{
 		const auto type_name = std::string{ expect(lexer::lexeme_type::identifier, true).value };
 		auto is_nullable = false;
@@ -371,6 +377,7 @@ namespace seam::core::parser
 					throw utils::parser_exception{ symbol_lexeme.position, error_message.str() };
 				}
 
+				auto is_forward_decl = false;
 				std::shared_ptr<types::type> var_type = nullptr;
 				if (symbol_lexeme.type == lexer::lexeme_type::symbol_colon_assign)
 				{
@@ -379,7 +386,15 @@ namespace seam::core::parser
 				else
 				{
 					var_type = parse_type();
-					expect(lexer::lexeme_type::symbol_assign, true);
+
+					if (lexer_.peek_lexeme().type != lexer::lexeme_type::symbol_assign)
+					{
+						is_forward_decl = true;
+					}
+					else
+					{
+						expect(lexer::lexeme_type::symbol_assign, true);
+					}
 				}				
 
 				current_block_->variables.emplace(variable_name, std::make_shared<ir::ast::variable>(variable_name, var_type));
@@ -387,7 +402,7 @@ namespace seam::core::parser
 				return std::make_unique<ir::ast::statement::variable_assignment>(
 					generate_range(symbol_lexeme, lexer_.peek_lexeme()),
 					std::move(variable_name),
-					parse_expression().first);
+					is_forward_decl ? nullptr : parse_expression().first);
 			}
 			default:
 			{
@@ -401,10 +416,8 @@ namespace seam::core::parser
 	std::unique_ptr<ir::ast::statement::statement_block> parser::parse_statement_block(const ir::ast::statement::parameter_list* vars)
 	{
 		const auto& open_block = expect(lexer::lexeme_type::symbol_open_brace, true);
-		auto* const old_block = current_block_;
-		auto new_block = std::make_unique<ir::ast::statement::statement_block>(generate_range(open_block, lexer_.peek_lexeme()));
-		new_block->parent = current_block_;
-		current_block_ = new_block.get();
+
+		auto new_block = enter_scope<ir::ast::statement::statement_block>();
 
 		if (vars)
 		{
@@ -478,10 +491,11 @@ namespace seam::core::parser
 		}
 
 		const auto& close_block = expect(lexer::lexeme_type::symbol_close_brace, true);
-
-		current_block_ = old_block;
+		exit_scope();
+		
 		new_block->range = generate_range(open_block, close_block),
 		new_block->body = std::move(body);
+		
 		return std::move(new_block);
 	}
 	
@@ -503,10 +517,10 @@ namespace seam::core::parser
 			return_type = parse_type();
 		}
 
-		std::vector<std::string> attributes;
+		std::set<std::string> attributes;
 		while (lexer_.peek_lexeme().type == lexer::lexeme_type::attribute)
 		{
-			attributes.emplace_back(std::string{ lexer_.next_lexeme().value });
+			attributes.emplace(std::string{ lexer_.next_lexeme().value });
 		}
 		
 		auto function_body = parse_statement_block(&parameter_list);
@@ -597,10 +611,8 @@ namespace seam::core::parser
 		ir::ast::statement::declaration_list body;
 
 		const auto& start = lexer_.peek_lexeme();
-		auto* const old_block = current_block_;
-		auto new_block = std::make_unique<ir::ast::statement::declaration_block>(generate_range(start, lexer_.peek_lexeme()));
-		new_block->parent = current_block_;
-		current_block_ = new_block.get();
+
+		auto new_block = enter_scope<ir::ast::statement::declaration_block>();
 		
 		while (true)
 		{
@@ -615,14 +627,15 @@ namespace seam::core::parser
 			body.emplace_back(parse_declaration());
 		}
 
-		current_block_ = old_block;
 		new_block->range = generate_range(start, lexer_.peek_lexeme());
 		new_block->body = std::move(body);
+		exit_scope();
+		
 		return std::move(new_block);
 	}
 
-	parser::parser(const std::string_view source) :
-		lexer_({ source })
+	parser::parser(module* module) :
+		lexer_(module)
 	{}
 
 	std::unique_ptr<ir::ast::statement::declaration_block> parser::parse()

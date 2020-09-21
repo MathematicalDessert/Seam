@@ -4,6 +4,7 @@
 #include <unordered_set>
 
 #include "lexer.hpp"
+#include "../module.hpp"
 #include "../utils/exception.hpp"
 
 namespace seam::core::lexer
@@ -78,7 +79,7 @@ namespace seam::core::lexer
 
 	char lexer::peek_character(const std::size_t offset) const
 	{
-		return read_offset_ + offset >= source_.length() ? eof_character : source_[read_offset_ + offset];
+		return read_offset_ + offset >= module_->source_.length() ? eof_character : module_->source_[read_offset_ + offset];
 	}
 
 	void lexer::consume_character()
@@ -149,7 +150,7 @@ namespace seam::core::lexer
 			if (peek_character() == '"')
 			{
 				ref.type = lexeme_type::string_literal;
-				ref.value = source_.substr(start_offset, read_offset_ - start_offset);
+				ref.value = module_->source_.substr(start_offset, read_offset_ - start_offset);
 				consume_character();
 				return;
 			}
@@ -204,7 +205,7 @@ namespace seam::core::lexer
 		}
 
 		ref.type = lexeme_type::number_literal;
-		ref.value = source_.substr(start_offset, read_offset_ - start_offset);
+		ref.value = module_->source_.substr(start_offset, read_offset_ - start_offset);
 	}
 
 	void lexer::lex_keyword_or_identifier(lexeme& ref)
@@ -226,7 +227,7 @@ namespace seam::core::lexer
 			if (!is_identifier_char(next_char))
 			{
 				ref.type = lexeme_type::identifier;
-				ref.value = source_.substr(start_offset, read_offset_ - start_offset);
+				ref.value = module_->source_.substr(start_offset, read_offset_ - start_offset);
 				break;
 			}
 
@@ -235,7 +236,7 @@ namespace seam::core::lexer
 
 		if (can_be_keyword)
 		{
-			if (const auto keyword_type = keyword_map.find(source_.substr(start_offset, read_offset_ - start_offset)); keyword_type != keyword_map.cend())
+			if (const auto keyword_type = keyword_map.find(module_->source_.substr(start_offset, read_offset_ - start_offset)); keyword_type != keyword_map.cend())
 			{
 				ref.type = keyword_type->second;
 			}
@@ -264,7 +265,7 @@ namespace seam::core::lexer
 
 			if (!is_identifier_char(next_char))
 			{
-				const auto proposed_attribute = source_.substr(start_offset, read_offset_ - start_offset);
+				const auto proposed_attribute = module_->source_.substr(start_offset, read_offset_ - start_offset);
 				if (attributes.find(std::string{ proposed_attribute }) == attributes.cend())
 				{
 					std::stringstream error_message;
@@ -288,12 +289,12 @@ namespace seam::core::lexer
 		consume_character();
 		lexeme_map_t::const_iterator symbol;
 		lexeme_type type;
-		if (peek_character(1) != eof_character && (symbol = symbol_map.find(source_.substr(start_offset, 2))) != symbol_map.cend())
+		if (peek_character(1) != eof_character && (symbol = symbol_map.find(module_->source_.substr(start_offset, 2))) != symbol_map.cend())
 		{
 			consume_character();
 			type = symbol->second;
 		}
-		else if (symbol = symbol_map.find(source_.substr(start_offset, 1)); symbol != symbol_map.cend())
+		else if (symbol = symbol_map.find(module_->source_.substr(start_offset, 1)); symbol != symbol_map.cend())
 		{
 			type = symbol->second;
 		}
@@ -367,8 +368,8 @@ namespace seam::core::lexer
 		}
 	}
 	
-	lexer::lexer(const std::string_view& source) :
-		source_(source)
+	lexer::lexer(module* module) :
+		module_(module)
 	{}
 	
 	lexeme& lexer::peek_lexeme()
