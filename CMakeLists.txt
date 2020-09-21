@@ -1,6 +1,6 @@
 # Seam Language Compiler
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.5)
 
 project(seam VERSION 0.0.1 LANGUAGES CXX)
 
