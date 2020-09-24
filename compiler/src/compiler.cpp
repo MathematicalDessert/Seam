@@ -4,6 +4,10 @@
 #include "parser/parser.hpp"
 #include "utils/exception.hpp"
 #include "module.hpp"
+#include "code_generation\code_generator.hpp"
+#include <llvm/Support/WithColor.h>
+#include <llvm/Bitcode/BitcodeWriter.h>
+#include <llvm/Support/Program.h>
 
 int main()
 {
@@ -11,15 +15,26 @@ int main()
 	{
 		 auto main_module = std::make_unique< seam::core::module>("main",
 			R"(
-fn main() @constructor
+fn test(a: i32) -> i32
 {
-	a: i32
-	a = 123
+	return 1
+}
+
+fn main() -> void @constructor
+{
+	a: i32 = 1 + 2// Forward declaration
+	a = a + 3
 }
 )"
 		);
 		
 		seam::core::parser::parser parser(main_module.get());
+		parser.parse();
+
+		seam::core::code_generation::code_generator code_gen(main_module.get());
+		auto module = code_gen.generate();
+
+		module->print(llvm::outs(), nullptr);
 	}
 	catch (seam::core::utils::lexical_exception& error)
 	{

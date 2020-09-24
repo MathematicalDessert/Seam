@@ -12,7 +12,7 @@ add_library(core src/lexer/lexer.cpp
 				 src/ir/ast/statement.cpp
 				 src/ir/ast/expression.cpp
 				 src/debug/graphviz_visitor.cpp
-				 src/code_generation/code_generator.cpp)
+				 src/code_generation/code_generator.cpp "src/parser/passes/type_analyzer.cpp")
 
 install(TARGETS core
 		LIBRARY DESTINATION lib

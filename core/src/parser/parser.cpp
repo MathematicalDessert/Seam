@@ -4,6 +4,7 @@
 #include "parser.hpp"
 #include "../module.hpp"
 #include "../utils/exception.hpp"
+#include "passes/type_analyzer.hpp"
 
 namespace seam::core::parser
 {
@@ -58,22 +59,6 @@ namespace seam::core::parser
 	{
 		current_block_ = current_block_->parent;
 	}
-	
-	std::shared_ptr<ir::ast::variable> parser::get_variable_from_current_block(const std::string& variable_name) const
-	{
-		auto* current_block = current_block_;
-		while (current_block)
-		{
-			if (auto iterator = current_block->variables.find(variable_name); iterator != current_block->variables.cend())
-			{
-				return iterator->second;
-			}
-			current_block = current_block->parent;
-		}
-		
-		return nullptr;
-	}
-
 	
 	std::shared_ptr<types::type> parser::parse_type(const bool can_be_nullable)
 	{
@@ -181,7 +166,7 @@ namespace seam::core::parser
 					return parse_call_expression(std::move(name));
 				}
 
-				if (!get_variable_from_current_block(name))
+				if (!current_block_->get_variable(name))
 				{
 					std::stringstream error_message;
 					error_message << "use of undeclared variable '" << name << "'";
@@ -356,7 +341,8 @@ namespace seam::core::parser
 		{
 			case lexer::lexeme_type::symbol_assign: // <> = <>
 			{
-				if (!get_variable_from_current_block(variable_name))
+				auto existing_var = current_block_->get_variable(variable_name);
+				if (!existing_var)
 				{
 					std::stringstream error_message;
 					error_message << "cannot assign undeclared variable '" << variable_name << "', did you mean to declare?";
@@ -365,12 +351,13 @@ namespace seam::core::parser
 				return std::make_unique<ir::ast::statement::variable_assignment>(
 					generate_range(symbol_lexeme, lexer_.peek_lexeme()),
 					std::move(variable_name),
+					existing_var->type,
 					parse_expression().first);
 			}
 			case lexer::lexeme_type::symbol_colon_assign: // <> := <>
 			case lexer::lexeme_type::symbol_colon: // <>: <> = <>
 			{
-				if (get_variable_from_current_block(variable_name))
+				if (current_block_->get_variable(variable_name))
 				{
 					std::stringstream error_message;
 					error_message << "cannot re-declare variable '" << variable_name << "', did you mean to assign?";
@@ -402,6 +389,7 @@ namespace seam::core::parser
 				return std::make_unique<ir::ast::statement::variable_assignment>(
 					generate_range(symbol_lexeme, lexer_.peek_lexeme()),
 					std::move(variable_name),
+					var_type,
 					is_forward_decl ? nullptr : parse_expression().first);
 			}
 			default:
@@ -524,9 +512,11 @@ namespace seam::core::parser
 		}
 		
 		auto function_body = parse_statement_block(&parameter_list);
+		function_body->return_type = return_type;
 
 		return std::make_unique<ir::ast::statement::function_definition>(
 			generate_range(kw_lexeme, lexer_.peek_lexeme()),
+			module_->get_name() + current_block_->name,
 			std::move(function_name),
 			std::move(return_type),
 			std::move(parameter_list),
@@ -553,7 +543,9 @@ namespace seam::core::parser
 		ir::ast::statement::declaration_list body;
 		
 		auto start_type_section = expect(lexer::lexeme_type::symbol_open_brace, true);
-		
+
+		auto new_block = enter_scope<ir::ast::statement::declaration_block>(type_name);
+
 		while (lexer_.peek_lexeme().type != lexer::lexeme_type::symbol_close_brace)
 		{
 			if (lexer_.peek_lexeme().type == lexer::lexeme_type::identifier)
@@ -576,13 +568,15 @@ namespace seam::core::parser
 		
 		expect(lexer::lexeme_type::symbol_close_brace, true);
 
+		new_block->range = generate_range(start_type_section, lexer_.peek_lexeme());
+		new_block->body = std::move(body);
+		exit_scope();
+
 		return std::make_unique<ir::ast::statement::type_class_definition>(
 			generate_range(kw_lexeme, lexer_.peek_lexeme()),
 			std::move(type_name),
 			std::move(fields),
-			std::make_unique<ir::ast::statement::declaration_block>(
-				generate_range(start_type_section, lexer_.peek_lexeme()),
-				std::move(body)));
+			std::move(new_block));
 	}
 	
 	std::unique_ptr<ir::ast::statement::declaration> parser::parse_declaration()
@@ -634,16 +628,20 @@ namespace seam::core::parser
 		return std::move(new_block);
 	}
 
-	parser::parser(module* module) :
-		lexer_(module)
-	{}
-
-	std::unique_ptr<ir::ast::statement::declaration_block> parser::parse()
+	void parser::parse()
 	{
 		auto root = parse_declaration_block();
 
 		expect(lexer::lexeme_type::eof);
 
-		return std::move(root);
+		passes::type_analyzer type_analyzer_pass(root.get());
+		type_analyzer_pass.run();
+
+		module_->set_root(std::move(root));
+
 	}
+
+	parser::parser(module* module) :
+		module_(module), lexer_(module)
+	{}
 }

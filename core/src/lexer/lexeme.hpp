@@ -110,7 +110,7 @@ namespace seam::core::lexer
 	};
 	static_assert(static_cast<int>(lexeme_type::count) + 1 == std::size(lexeme_type_name_array), "lexeme_type and lexeme_type_name_array size mismatch");
 	
-	static bool is_operator(const lexeme_type type)
+	static bool is_numerical_operator(const lexeme_type type)
 	{
 		switch (type)
 		{
@@ -122,13 +122,6 @@ namespace seam::core::lexer
 			case lexeme_type::symbol_subtract_assign:
 			case lexeme_type::symbol_multiply:
 			case lexeme_type::symbol_multiply_assign:
-			case lexeme_type::symbol_eq:
-			case lexeme_type::symbol_neq:
-			case lexeme_type::symbol_lt:
-			case lexeme_type::symbol_lt_eq:
-			case lexeme_type::symbol_gt:
-			case lexeme_type::symbol_gt_eq:
-			case lexeme_type::symbol_not:
 			case lexeme_type::symbol_mod:
 			{
 				return true;
@@ -138,6 +131,32 @@ namespace seam::core::lexer
 				return false;
 			}
 		}
+	}
+
+	static bool is_comparison_operator(const lexeme_type type)
+	{
+		switch (type)
+		{
+			case lexeme_type::symbol_eq:
+			case lexeme_type::symbol_neq:
+			case lexeme_type::symbol_lt:
+			case lexeme_type::symbol_lt_eq:
+			case lexeme_type::symbol_gt:
+			case lexeme_type::symbol_gt_eq:
+			case lexeme_type::symbol_not:
+			{
+				return true;
+			}
+			default:
+			{
+				return false;
+			}
+		}
+	}
+
+	static bool is_operator(const lexeme_type type)
+	{
+		return is_comparison_operator(type) || is_numerical_operator(type);
 	}
 
 	static bool is_unary_operator(const lexeme_type type)

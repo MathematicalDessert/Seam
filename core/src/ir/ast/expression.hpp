@@ -7,6 +7,7 @@
 #include "node.hpp"
 #include "statement.hpp"
 #include "../../lexer/lexeme.hpp"
+#include "../../types/type.hpp"
 
 namespace seam::core::ir::ast::expression
 {
@@ -90,6 +91,7 @@ namespace seam::core::ir::ast::expression
 	{
 		std::variant<std::uint64_t, double> value;
 		bool is_unsigned;
+		std::shared_ptr<types::type> type;
 
 		void visit(visitor* vst) override;
 
@@ -105,6 +107,8 @@ namespace seam::core::ir::ast::expression
 				this->value = std::stoull(value);
 				this->is_unsigned = value[0] != '-';
 			}
+
+			type = std::make_shared<types::type>(types::get_smallest_viable_number_type(this->value, this->is_unsigned));
 		}
 	};
 

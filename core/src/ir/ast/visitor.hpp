@@ -37,7 +37,10 @@ namespace seam::core::ir::ast
 		VISITOR(expression::expression, expression::literal);
 		VISITOR(expression::literal, expression::bool_literal);
 		VISITOR(expression::literal, expression::string_literal);
-		VISITOR(expression::literal, expression::number_literal);	
+		VISITOR(expression::literal, expression::number_literal);
+
+		VISITOR(expression::expression, expression::call);
+		VISITOR(expression::expression, expression::variable);
 	};
 }
 
