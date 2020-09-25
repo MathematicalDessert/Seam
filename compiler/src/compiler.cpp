@@ -4,7 +4,7 @@
 #include "parser/parser.hpp"
 #include "utils/exception.hpp"
 #include "module.hpp"
-#include "code_generation\code_generator.hpp"
+#include "code_generation/code_generator.hpp"
 #include <llvm/Support/WithColor.h>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/Support/Program.h>
@@ -17,7 +17,11 @@ int main()
 			R"(
 fn test(a: i32) -> i32
 {
-	return 1
+	if (a <= 1)
+	{
+		return 1
+	}
+	return 2
 }
 
 fn main() -> void @constructor
