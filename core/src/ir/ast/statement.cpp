@@ -3,6 +3,21 @@
 
 namespace seam::core::ir::ast::statement
 {
+	std::shared_ptr<ir::ast::variable> block::get_variable(const std::string& variable_name)
+	{
+		auto* current_block = this;
+		while (current_block)
+		{
+			if (auto iterator = current_block->variables.find(variable_name); iterator != current_block->variables.cend())
+			{
+				return iterator->second;
+			}
+			current_block = current_block->parent;
+		}
+
+		return nullptr;
+	}
+
 	void statement_block::visit(visitor* vst)
 	{
 		if (vst->visit(this))
@@ -85,7 +100,11 @@ namespace seam::core::ir::ast::statement
 		{
 			condition->visit(vst);
 			body->visit(vst);
-			else_body->visit(vst);
+
+			if (else_body)
+			{
+				else_body->visit(vst);
+			}
 		}
 	}
 }

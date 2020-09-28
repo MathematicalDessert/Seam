@@ -14,6 +14,7 @@ namespace seam::core
 	{
 		class parser
 		{
+			module* module_;
 			lexer::lexer lexer_;
 			ir::ast::statement::block* current_block_ = nullptr;
 
@@ -22,19 +23,22 @@ namespace seam::core
 			utils::position_range generate_range(const lexer::lexeme& start, const lexer::lexeme& end);
 
 			template<typename T>
-			std::unique_ptr<T> enter_scope()
+			std::unique_ptr<T> enter_scope(std::string name = "")
 			{
 				const auto& start = lexer_.peek_lexeme();
 				auto new_block = std::make_unique<T>(generate_range(start, start));
 				new_block->parent = current_block_;
 				current_block_ = new_block.get();
+				
+				if (!name.empty())
+				{
+					current_block_->name = new_block->parent->name + "@" + name;
+				}
 
 				return std::move(new_block);
 			}
 
 			void exit_scope();
-
-			[[nodiscard]] std::shared_ptr<ir::ast::variable> get_variable_from_current_block(const std::string& variable_name) const;
 
 			std::shared_ptr<types::type> parse_type(bool can_be_nullable = true);
 			std::unique_ptr<ir::ast::parameter> parse_parameter();
@@ -56,9 +60,9 @@ namespace seam::core
 			std::unique_ptr<ir::ast::statement::declaration> parse_declaration();
 			std::unique_ptr<ir::ast::statement::declaration_block> parse_declaration_block(bool is_type_scope = false);
 		public:
-			explicit parser(module* module);
+			void parse();
 
-			std::unique_ptr<ir::ast::statement::declaration_block> parse();
+			explicit parser(module* module);
 		};
 	}
 }

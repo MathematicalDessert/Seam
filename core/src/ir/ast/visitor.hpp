@@ -29,6 +29,7 @@ namespace seam::core::ir::ast
 		VISITOR(statement::statement, statement::variable_assignment);
 		
 		VISITOR(statement::statement, statement::ret_stat);
+		VISITOR(statement::statement, statement::if_stat);
 		
 		VISITOR(statement::statement, expression::expression);
 		VISITOR(expression::expression, expression::unary);
@@ -37,7 +38,10 @@ namespace seam::core::ir::ast
 		VISITOR(expression::expression, expression::literal);
 		VISITOR(expression::literal, expression::bool_literal);
 		VISITOR(expression::literal, expression::string_literal);
-		VISITOR(expression::literal, expression::number_literal);	
+		VISITOR(expression::literal, expression::number_literal);
+
+		VISITOR(expression::expression, expression::call);
+		VISITOR(expression::expression, expression::variable);
 	};
 }
 
