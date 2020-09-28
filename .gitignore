@@ -34,3 +34,5 @@
 # Output
 out/
 /.vs
+/.vscode
+/build
