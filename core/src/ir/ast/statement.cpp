@@ -100,7 +100,11 @@ namespace seam::core::ir::ast::statement
 		{
 			condition->visit(vst);
 			body->visit(vst);
-			else_body->visit(vst);
+
+			if (else_body)
+			{
+				else_body->visit(vst);
+			}
 		}
 	}
 }

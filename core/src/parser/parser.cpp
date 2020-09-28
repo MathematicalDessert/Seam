@@ -166,7 +166,8 @@ namespace seam::core::parser
 					return parse_call_expression(std::move(name));
 				}
 
-				if (!current_block_->get_variable(name))
+				const auto variable = current_block_->get_variable(name);
+				if (!variable)
 				{
 					std::stringstream error_message;
 					error_message << "use of undeclared variable '" << name << "'";
@@ -175,6 +176,7 @@ namespace seam::core::parser
 					
 				return std::make_unique<ir::ast::expression::variable>(
 					generate_range(current_lexeme, lexer_.peek_lexeme()),
+					variable->type,
 					std::move(name)
 					);
 			}
@@ -215,10 +217,14 @@ namespace seam::core::parser
 		{
 			const auto operator_type = lexer_.next_lexeme().type;
 
+			auto inner_expression = parse_expression(unary_priority).first;
 			expression = std::make_unique<ir::ast::expression::unary>(
 				generate_range(first_lexeme, lexer_.peek_lexeme()),
-				parse_expression(unary_priority).first,
+				inner_expression->type,
+				std::move(inner_expression),
 				operator_type);
+
+			expression->type = inner_expression->type;
 		}
 		else
 		{
@@ -240,9 +246,11 @@ namespace seam::core::parser
 
 			expression = std::make_unique<ir::ast::expression::binary>(
 				generate_range(first_lexeme, lexer_.peek_lexeme()),
+				expression->type,
 				std::move(expression), 
 				std::move(next_expression),
 				operator_type);
+
 
 			if (!next_operator_type)
 			{
@@ -512,7 +520,6 @@ namespace seam::core::parser
 		}
 		
 		auto function_body = parse_statement_block(&parameter_list);
-		function_body->return_type = return_type;
 
 		return std::make_unique<ir::ast::statement::function_definition>(
 			generate_range(kw_lexeme, lexer_.peek_lexeme()),

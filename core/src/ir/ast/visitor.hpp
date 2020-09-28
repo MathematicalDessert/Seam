@@ -29,6 +29,7 @@ namespace seam::core::ir::ast
 		VISITOR(statement::statement, statement::variable_assignment);
 		
 		VISITOR(statement::statement, statement::ret_stat);
+		VISITOR(statement::statement, statement::if_stat);
 		
 		VISITOR(statement::statement, expression::expression);
 		VISITOR(expression::expression, expression::unary);

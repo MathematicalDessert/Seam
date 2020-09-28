@@ -10,6 +10,7 @@ namespace seam::core::parser::passes
 	{
 		ir::ast::statement::block* current_block;
 		types::built_in_type current_type;
+		types::built_in_type return_type = types::built_in_type::undefined;
 
 		bool visit(ir::ast::expression::bool_literal* node) override
 		{
@@ -25,6 +26,12 @@ namespace seam::core::parser::passes
 			{
 				throw utils::type_exception(node->range.start, "invalid number");
 			}
+			return false;
+		}
+
+		bool visit(ir::ast::expression::string_literal* node) override
+		{
+			current_type = types::built_in_type::string;
 			return false;
 		}
 
@@ -108,16 +115,24 @@ namespace seam::core::parser::passes
 
 		bool visit(ir::ast::statement::ret_stat* node) override
 		{
-			if (current_block->return_type->is_implicit_type && current_block->return_type->internal_type == types::built_in_type::undefined)
+			node->value->visit(this);
+			return_type = current_type;
+
+			/*if (!current_return_type)
 			{
 				node->value->visit(this);
-				current_block->return_type->internal_type = current_type;
+				current_return_type = std::make_shared<types::type>(current_type);
+			}
+			else if (current_return_type->is_implicit_type && current_return_type->internal_type == types::built_in_type::undefined)
+			{
+				node->value->visit(this);
+				current_return_type->internal_type = current_type;
 			}
 			else
 			{
 				node->value->visit(this);
 
-				auto coerced_type = coerce_type(current_block->return_type->internal_type, current_type);
+				auto coerced_type = coerce_type(current_return_type->internal_type, current_type);
 				if (coerced_type == types::built_in_type::undefined)
 				{
 					std::stringstream error_message;
@@ -129,8 +144,41 @@ namespace seam::core::parser::passes
 
 					throw utils::type_exception(node->range.start, error_message.str());
 				}
+			}*/
 
+			return false;
+		}
+		
+		bool visit(ir::ast::statement::function_definition* node) override
+		{
+			for (auto& statement : node->block->body)
+			{
+				statement->visit(this);
+				if (node->return_type->internal_type != types::built_in_type::undefined && return_type != node->return_type->internal_type)
+				{
+					auto coerced_type = coerce_type(node->return_type->internal_type, current_type);
+					if (coerced_type == types::built_in_type::undefined)
+					{
+						std::stringstream error_message;
+						error_message
+							<< "incompatible return types: "
+							<< types::built_in_type_name_array[static_cast<int>(node->return_type->internal_type)]
+							<< ", tried to return type "
+							<< types::built_in_type_name_array[static_cast<int>(current_type)];
+
+						throw utils::type_exception(node->range.start, error_message.str());
+					}
+					return_type = types::built_in_type::undefined;
+				}
+
+				if (return_type != types::built_in_type::undefined
+					&& node->return_type->internal_type == types::built_in_type::undefined)
+				{
+					node->return_type->internal_type = return_type;
+					return_type = types::built_in_type::undefined;
+				}
 			}
+			return true;
 		}
 
 		bool visit(ir::ast::statement::statement_block* node) override

@@ -261,6 +261,15 @@ namespace seam::core::types
 		return built_in_type::undefined;
 	}
 
+	struct base_type
+	{
+		built_in_type internal_type = built_in_type::undefined;
+
+		explicit base_type(built_in_type type) :
+			internal_type(type)
+		{}
+	};
+
 	struct type
 	{
 		std::string name;

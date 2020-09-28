@@ -77,6 +77,69 @@ namespace seam::core::code_generation
 			return false;
 		}
 
+		bool visit(ir::ast::statement::if_stat* node) override
+		{
+			node->condition->visit(this);
+			auto condition_value = value;
+
+			auto start_block = builder.GetInsertBlock();
+
+			auto main_body_block = llvm::BasicBlock::Create(builder.getContext(), "body",
+				start_block->getParent());
+
+			builder.SetInsertPoint(main_body_block);
+			node->body->visit(this);
+
+			if (node->else_body)
+			{
+				auto else_body_block = llvm::BasicBlock::Create(builder.getContext(), "else_body",
+					start_block->getParent());
+
+				builder.SetInsertPoint(else_body_block);
+				node->else_body->visit(this);
+
+				auto end_block = llvm::BasicBlock::Create(builder.getContext(), "exit",
+					start_block->getParent());
+
+				builder.SetInsertPoint(start_block);
+				builder.CreateCondBr(condition_value, main_body_block, else_body_block);
+
+				if (!main_body_block->getTerminator())
+				{
+					builder.SetInsertPoint(main_body_block);
+					builder.CreateBr(end_block);
+				}
+
+				if (!else_body_block->getTerminator())
+				{
+					builder.SetInsertPoint(else_body_block);
+					builder.CreateBr(end_block);
+				}
+
+				builder.SetInsertPoint(end_block);
+			}
+			else
+			{
+				auto end_block = llvm::BasicBlock::Create(builder.getContext(), "exit",
+					start_block->getParent());
+
+				if (!start_block->getTerminator())
+				{
+					builder.SetInsertPoint(start_block);
+					builder.CreateCondBr(condition_value, main_body_block, end_block);
+				}
+
+				if (!main_body_block->getTerminator())
+				{
+					builder.SetInsertPoint(main_body_block);
+					builder.CreateBr(end_block);
+				}
+
+				builder.SetInsertPoint(end_block);
+			}
+			return false;
+		}
+
 		bool visit(ir::ast::expression::variable* node) override
 		{
 			const auto& it = variables.find(node);
@@ -89,6 +152,148 @@ namespace seam::core::code_generation
 				auto var = current_block->get_variable(node->name);
 				value = builder.CreateAlloca(generator.get_type(var->type->internal_type), nullptr);
 			}
+			return false;
+		}
+
+		bool visit(ir::ast::expression::binary* node) override
+		{
+			node->left->visit(this);
+			const auto lhs_value = value;
+
+			node->right->visit(this);
+			const auto rhs_value = value;
+
+			// TODO: correct?
+			bool unsigned_operation = false;//resolved_left->is_unsigned && resolved_right->is_unsigned;
+
+			// If either left or right is floating point, use a floating point operation.
+		   /* bool float_operation = std::visit(
+				[&float_operation](auto&& left_value, auto&& right_value) -> bool
+				{
+					using left_value_t = std::decay_t<decltype(left_value)>;
+					using right_value_t = std::decay_t<decltype(right_value)>;
+					return (std::is_same_v<left_value_t, float> || std::is_same_v<left_value_t, double>)
+						|| (std::is_same_v<right_value_t, float> || std::is_same_v<right_value_t, double>);
+				}, resolved_left->value, resolved_right->value);*/
+
+			const auto float_operation = false;
+
+			switch (node->operation)
+			{
+			case lexer::lexeme_type::symbol_add:
+			{
+				if (float_operation)
+				{
+					value = builder.CreateFAdd(lhs_value, rhs_value, "faddtmp");
+				}
+				else
+				{
+					value = builder.CreateAdd(lhs_value, rhs_value, "addtmp");
+				}
+				break;
+			}
+			case lexer::lexeme_type::symbol_subtract:
+			{
+				if (float_operation)
+				{
+					value = builder.CreateFSub(lhs_value, rhs_value, "fsubtmp");
+				}
+				else
+				{
+					value = builder.CreateSub(lhs_value, rhs_value, "subtmp");
+				}
+				break;
+			}
+			case lexer::lexeme_type::symbol_multiply:
+			{
+				if (float_operation)
+				{
+					value = builder.CreateFMul(lhs_value, rhs_value, "fmultmp");
+				}
+				else
+				{
+					value = builder.CreateMul(lhs_value, rhs_value, "multmp");
+				}
+				break;
+			}
+			case lexer::lexeme_type::symbol_divide:
+			{
+				if (float_operation)
+				{
+					value = builder.CreateFDiv(lhs_value, rhs_value, "fdivtmp");
+				}
+				else if (unsigned_operation)
+				{
+					value = builder.CreateUDiv(lhs_value, rhs_value, "udivtmp");
+				}
+				else
+				{
+					value = builder.CreateSDiv(lhs_value, rhs_value, "sdivtmp");
+				}
+				break;
+			}
+			case lexer::lexeme_type::symbol_eq:
+			{
+				if (float_operation)
+				{
+					value = builder.CreateFCmpOEQ(lhs_value, rhs_value, "feqtmp");
+				}
+				else
+				{
+					value = builder.CreateICmpEQ(lhs_value, rhs_value, "eqtmp");
+				}
+				break;
+			}
+			case lexer::lexeme_type::symbol_neq:
+			{
+				if (float_operation)
+				{
+					value = builder.CreateFCmpONE(lhs_value, rhs_value, "fnetmp");
+				}
+				else
+				{
+					value = builder.CreateICmpNE(lhs_value, rhs_value, "netmp");
+				}
+				break;
+			}
+			case lexer::lexeme_type::symbol_lt:
+			{
+				if (float_operation)
+				{
+					value = builder.CreateFCmpOLT(lhs_value, rhs_value, "folttmp");
+				}
+				else if (unsigned_operation)
+				{
+					value = builder.CreateICmpULT(lhs_value, rhs_value, "ulttmp");
+				}
+				else
+				{
+					value = builder.CreateICmpSLT(lhs_value, rhs_value, "slttmp");
+				}
+				break;
+			}
+			case lexer::lexeme_type::symbol_gt:
+			{
+				if (float_operation)
+				{
+					value = builder.CreateFCmpOGT(lhs_value, rhs_value, "fogttmp");
+				}
+				else if (unsigned_operation)
+				{
+					value = builder.CreateICmpUGT(lhs_value, rhs_value, "ugttmp");
+				}
+				else
+				{
+					value = builder.CreateICmpSGT(lhs_value, rhs_value, "sgttmp");
+				}
+				break;
+			}
+			default:
+			{
+				throw utils::compiler_exception{ node->range.start, "internal compiler error: invalid binary operation" };
+			}
+			}
+
 			return false;
 		}
 
@@ -139,7 +344,7 @@ namespace seam::core::code_generation
 		}
 
 
-		auto type = get_type(function->return_type->internal_type == types::built_in_type::undefined ? function->block->return_type->internal_type : function->return_type->internal_type);
+		auto type = get_type(function->return_type->internal_type);
 
 		const auto function_type = llvm::FunctionType::get(type, llvm::makeArrayRef(param_types), false);
 		function_type_map.emplace(function->mangled_name, function_type);

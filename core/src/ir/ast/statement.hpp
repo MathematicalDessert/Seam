@@ -52,7 +52,6 @@ namespace seam::core::ir::ast
 		{
 			std::string name;
 			block* parent = nullptr;
-			std::shared_ptr<types::type> return_type;
 
 			std::unordered_map<std::string, std::shared_ptr<variable>> variables;
 
