@@ -19,9 +19,9 @@ namespace seam::core::ir::ast
 	struct parameter
 	{
 		std::string name;
-		std::shared_ptr<types::type> type;
+		std::shared_ptr<types::base_type> type;
 
-		explicit parameter(std::string name, std::shared_ptr<types::type> type) :
+		explicit parameter(std::string name, std::shared_ptr<types::base_type> type) :
 			name(std::move(name)), type(std::move(type))
 		{}
 	};
@@ -29,9 +29,9 @@ namespace seam::core::ir::ast
 	struct variable
 	{
 		std::string name;
-		std::shared_ptr<types::type> type;
+		std::shared_ptr<types::base_type> type;
 
-		explicit variable(std::string name, std::shared_ptr<types::type> type) :
+		explicit variable(std::string name, std::shared_ptr<types::base_type> type) :
 			name(std::move(name)), type(std::move(type))
 		{}
 	};
@@ -53,9 +53,11 @@ namespace seam::core::ir::ast
 			std::string name;
 			block* parent = nullptr;
 
+			std::unordered_map<std::string, std::shared_ptr<types::base_type>> registered_types;
 			std::unordered_map<std::string, std::shared_ptr<variable>> variables;
 
-			std::shared_ptr<ir::ast::variable> get_variable(const std::string& variable_name);
+			std::shared_ptr<types::base_type> get_type(const std::string& type_name);
+			std::shared_ptr<variable> get_variable(const std::string& variable_name);
 
 			explicit block(const utils::position_range range) :
 				statement(range)
@@ -104,7 +106,7 @@ namespace seam::core::ir::ast
 		{
 			std::string name;
 			std::string mangled_name;
-			std::shared_ptr<types::type> return_type;
+			std::shared_ptr<types::base_type> return_type;
 			parameter_list parameters;
 			std::set<std::string> attributes;
 
@@ -112,7 +114,7 @@ namespace seam::core::ir::ast
 				declaration(range)
 			{}
 			
-			explicit function_declaration(const utils::position_range range, std::string module_name, std::string function_name, std::shared_ptr<types::type> return_type, parameter_list parameters, std::set<std::string> attributes) :
+			explicit function_declaration(const utils::position_range range, std::string module_name, std::string function_name, std::shared_ptr<types::base_type> return_type, parameter_list parameters, std::set<std::string> attributes) :
 				declaration(range), name(std::move(function_name)), return_type(std::move(return_type)), parameters(std::move(parameters)), attributes(std::move(attributes))
 			{
 				mangled_name = module_name + "@" + name;
@@ -129,7 +131,7 @@ namespace seam::core::ir::ast
 				function_declaration(range)
 			{}
 			
-			explicit function_definition(const utils::position_range range, std::string module_name, std::string function_name, std::shared_ptr<types::type> return_type, parameter_list parameters, std::set<std::string> attributes, std::unique_ptr<statement_block> block) :
+			explicit function_definition(const utils::position_range range, std::string module_name, std::string function_name, std::shared_ptr<types::base_type> return_type, parameter_list parameters, std::set<std::string> attributes, std::unique_ptr<statement_block> block) :
 				function_declaration(range, module_name, std::move(function_name), std::move(return_type), std::move(parameters), std::move(attributes)), block(std::move(block))
 			{}
 		};
@@ -145,11 +147,11 @@ namespace seam::core::ir::ast
 
 		struct type_alias_declaration final: type_declaration
 		{
-			std::shared_ptr<types::type> aliased_type;
+			std::shared_ptr<types::base_type> aliased_type;
 
 			void visit(visitor* vst) override;
 
-			explicit type_alias_declaration(const utils::position_range range, std::string name, std::shared_ptr<types::type> aliased_type) :
+			explicit type_alias_declaration(const utils::position_range range, std::string name, std::shared_ptr<types::base_type> aliased_type) :
 				type_declaration(range, std::move(name)), aliased_type(aliased_type)
 			{}
 		};
@@ -181,12 +183,12 @@ namespace seam::core::ir::ast
 		struct variable_assignment final : statement
 		{
 			std::string variable_name;
-			std::shared_ptr<types::type> type;
+			std::shared_ptr<types::base_type> type;
 			std::unique_ptr<expression::expression> value;
 
 			void visit(visitor* vst) override;
 
-			explicit variable_assignment(const utils::position_range range, std::string variable_name, std::shared_ptr<types::type> type, std::unique_ptr<expression::expression> value) :
+			explicit variable_assignment(const utils::position_range range, std::string variable_name, std::shared_ptr<types::base_type> type, std::unique_ptr<expression::expression> value) :
 				statement(range), variable_name(std::move(variable_name)), type(std::move(type)), value(std::move(value))
 			{}
 		};

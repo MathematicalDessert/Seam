@@ -157,7 +157,7 @@ namespace seam::core::lexer
 
 			if (peek_character() == eof_character)
 			{
-				throw utils::lexical_exception{ current_position(), "unclosed string literal" };
+				throw utils::lexical_exception{ current_position(), "unclosed t_string literal" };
 			}
 
 			consume_character();

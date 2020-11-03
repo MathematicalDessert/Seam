@@ -25,7 +25,7 @@ namespace seam::core::code_generation
 	public:
 		std::shared_ptr<llvm::Module> generate();
 
-		llvm::Type* get_type(types::built_in_type type);
+		llvm::Type* get_type(types::internal_type type);
 
 		explicit code_generator(module* module);		
 	};

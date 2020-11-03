@@ -15,21 +15,19 @@ int main()
 	{
 		 auto main_module = std::make_unique< seam::core::module>("main",
 			R"(
-fn test()
+fn test(a: i32, b: i32) -> bool
 {
-	if (1 + 2 == 3)
+	if (a + b > 10)
 	{
-		return 1
+		return false
 	}
-	elseif (1 + 2 == 4)
-	{
-		return 3
-	}
-	return 5
+	return true
 }
 
 fn main()  @constructor
 {
+	test(1, 10)
+	test(3, 99)
 	return 1
 }
 )"

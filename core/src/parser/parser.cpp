@@ -60,7 +60,7 @@ namespace seam::core::parser
 		current_block_ = current_block_->parent;
 	}
 	
-	std::shared_ptr<types::type> parser::parse_type(const bool can_be_nullable)
+	std::shared_ptr<types::base_type> parser::parse_type(const bool can_be_nullable)
 	{
 		const auto type_name = std::string{ expect(lexer::lexeme_type::identifier, true).value };
 		auto is_nullable = false;
@@ -74,7 +74,16 @@ namespace seam::core::parser
 			is_nullable = true;
 			lexer_.next_lexeme();
 		}
-		return std::make_shared<types::type>(type_name, is_nullable, false);
+
+		auto type = current_block_->get_type(type_name);
+		if (!type)
+		{
+			std::stringstream error_message;
+			error_message << "type '" << type_name << "' does not exist!";
+			throw utils::type_exception{ lexer_.peek_lexeme().position, error_message.str() };
+		}
+		
+		return type;
 	}
 
 	std::unique_ptr<ir::ast::parameter> parser::parse_parameter()
@@ -373,10 +382,10 @@ namespace seam::core::parser
 				}
 
 				auto is_forward_decl = false;
-				std::shared_ptr<types::type> var_type = nullptr;
+				std::shared_ptr<types::base_type> var_type = nullptr;
 				if (symbol_lexeme.type == lexer::lexeme_type::symbol_colon_assign)
 				{
-					var_type = std::make_shared<types::type>("", false, true);
+					// maybe do something
 				}
 				else
 				{
@@ -506,7 +515,7 @@ namespace seam::core::parser
 		auto parameter_list = parse_parameter_list();
 		expect(lexer::lexeme_type::symbol_close_parenthesis, true);
 
-		auto return_type = std::make_shared<types::type>("", false, true);
+		std::shared_ptr<types::base_type> return_type = nullptr;
 		if (lexer_.peek_lexeme().type == lexer::lexeme_type::symbol_arrow)
 		{
 			lexer_.next_lexeme();

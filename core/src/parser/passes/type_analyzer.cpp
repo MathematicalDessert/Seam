@@ -9,105 +9,145 @@ namespace seam::core::parser::passes
 	struct type_analyzer_visitor : ir::ast::visitor
 	{
 		ir::ast::statement::block* current_block;
-		types::built_in_type current_type;
-		types::built_in_type return_type = types::built_in_type::undefined;
+		std::shared_ptr<types::base_type> current_type;
+		std::shared_ptr<types::base_type> return_type = nullptr;
 
 		bool visit(ir::ast::expression::bool_literal* node) override
 		{
-			current_type = types::built_in_type::bool_;
+			current_type = node->type;
 			return false;
 		}
 
 		bool visit(ir::ast::expression::number_literal* node) override
 		{
-			current_type = types::get_smallest_viable_number_type(node->value, node->is_unsigned);
-			
-			if (current_type == types::built_in_type::undefined)
-			{
-				throw utils::type_exception(node->range.start, "invalid number");
-			}
+			current_type = node->type;
 			return false;
 		}
 
 		bool visit(ir::ast::expression::string_literal* node) override
 		{
-			current_type = types::built_in_type::string;
+			current_type = node->type;
 			return false;
 		}
 
 		bool visit(ir::ast::expression::variable* node) override
 		{
-			current_type = current_block->get_variable(node->name)->type->internal_type;
+			auto var = current_block->get_variable(node->name);
+			
+			current_type = var ? var->type : node->type;
 			return false;
 		}
 
+		bool visit(ir::ast::expression::unary* node) override
+		{
+			// is unary number operator on non-number
+			node->right->visit(this);
+			const auto expression_type = current_type;
+			
+			if ((is_arithmetic_operator(node->operation) && !expression_type->is_number())
+				|| (!is_arithmetic_operator(node->operation) && expression_type->is_boolean()))
+			{
+				std::stringstream error_message;
+				error_message << "unary operator "
+					<< lexer::lexeme_type_name_array[static_cast<int>(node->operation)]
+					<< " is not supported on type '"
+					<< expression_type->get_name()
+					<< "'";
+				throw utils::type_exception(node->range.start, error_message.str());
+			}
+			
+			return false;
+		}
+		
 		bool visit(ir::ast::expression::binary* node) override
 		{
 			node->left->visit(this);
-			auto left_type = current_type;
+			const auto lhs_type = current_type;
 
 			node->right->visit(this);
-			auto right_type = current_type;
+			const auto rhs_type = current_type;
 
-			if (lexer::is_numerical_operator(node->operation)) // make sure both left and right types are numbers
+
+			// both are numbers
+			if (is_arithmetic_operator(node->operation))
 			{
-				if (!types::is_number(left_type) || !types::is_number(right_type))
+				if (!lhs_type->is_number() || !rhs_type->is_number())
 				{
 					std::stringstream error_message;
-					error_message
-						<< "operator '"
-						<< lexer::lexeme::to_string(node->operation)
-						<< "' must be used on number types";
-
+					error_message << "binary operator "
+						<< lexer::lexeme_type_name_array[static_cast<int>(node->operation)]
+						<< " is only supported with number types";
 					throw utils::type_exception(node->range.start, error_message.str());
 				}
 
-				// check types are the same and coerce...
+				current_type = lhs_type;
 			}
-
-			if (left_type != right_type)
+			else if (is_comparision_operator(node->operation))
 			{
-				// TODO: check if rhs can be coerced into lhs
+				// 1 == 2
+				// true == false
+				// "asd" == "asd"
+				//
+
+				if (is_numerical_comparision_operator(node->operation))
+				{
+					if (!lhs_type->is_number() || !rhs_type->is_number())
+					{
+						std::stringstream error_message;
+						error_message << "binary operator "
+							<< lexer::lexeme_type_name_array[static_cast<int>(node->operation)]
+							<< " is only supported with number types";
+						throw utils::type_exception(node->range.start, error_message.str());
+					}
+					
+					if (lhs_type != rhs_type)
+					{
+						node->right->type = node->left->type;
+					}
+					current_type = types::get_base_type_from_name("bool");
+					return false;
+				}
+				
+				if (lhs_type != rhs_type)
+				{
+					std::stringstream error_message;
+					error_message << "binary operator "
+						<< lexer::lexeme_type_name_array[static_cast<int>(node->operation)]
+						<< " is being used on two different types!";
+					throw utils::type_exception(node->range.start, error_message.str());
+				}
+				current_type = types::get_base_type_from_name("bool");
 			}
 			
-			if (is_comparison_operator(node->operation))
-			{
-				current_type = types::built_in_type::bool_;
-			}
-			else
-			{
-				current_type = left_type;
-			}
+			
 			return false;
 		}
 
 		bool visit(ir::ast::statement::variable_assignment* node) override
 		{
-			if (node->value) // variable has immediate value
+			auto variable_type = current_block->get_variable(node->variable_name)->type;
+			if (!variable_type) // auto variable
 			{
 				node->value->visit(this);
+				node->type = current_type;
+
+				current_block->get_variable(node->variable_name)->type = current_type;
+			}
+			else
+			{
+
+				// TODO: Use virtual override for EQ operation on types...
 				
-				if (node->type->is_implicit_type) // "deduce" type
+				// a :i8 = "asd"
+				node->value->visit(this); // expression type
+				if ((!variable_type->is_number() && !current_type->is_number()) && variable_type != current_type)
 				{
-					node->type->internal_type = current_type;
-				}
-				else if (node->type && node->type->internal_type != types::built_in_type::undefined && current_type != node->type->internal_type)
-				{
-					// coerce rhs into lhs type (trim + expand)
-					auto coerced_type = coerce_type(node->type->internal_type, current_type);
-					if (coerced_type == types::built_in_type::undefined)
-					{
-						std::stringstream error_message;
-						error_message
-							<< "type mismatch: expected "
-							<< types::built_in_type_name_array[static_cast<int>(node->type->internal_type)]
-							<< ", got "
-							<< types::built_in_type_name_array[static_cast<int>(current_type)];
-
-						throw utils::type_exception(node->range.start, error_message.str());
-					}
-
-					// set coerced type maybe????
+					std::stringstream error_message;
+					error_message << "expression of type "
+						<< current_type->get_name()
+						<< "cannot be assigned to variable of type "
+						<< variable_type->get_name();
+					throw utils::type_exception(node->range.start, error_message.str());
 				}
 			}
 			return false;
@@ -116,71 +156,49 @@ namespace seam::core::parser::passes
 		bool visit(ir::ast::statement::ret_stat* node) override
 		{
 			node->value->visit(this);
-			return_type = current_type;
-
-			/*if (!current_return_type)
+			if (!return_type) // we're expecting a return type,
+							  // if not we should assign this as ret type
 			{
-				node->value->visit(this);
-				current_return_type = std::make_shared<types::type>(current_type);
-			}
-			else if (current_return_type->is_implicit_type && current_return_type->internal_type == types::built_in_type::undefined)
-			{
-				node->value->visit(this);
-				current_return_type->internal_type = current_type;
+				return_type = current_type;
 			}
 			else
 			{
-				node->value->visit(this);
-
-				auto coerced_type = coerce_type(current_return_type->internal_type, current_type);
-				if (coerced_type == types::built_in_type::undefined)
+				
+				if ((return_type->is_number() && current_type->is_number())
+					&& return_type != current_type) // two different numbers
+				{
+					// cAST THEM!
+				}
+				else if (return_type != current_type)
 				{
 					std::stringstream error_message;
-					error_message
-						<< "incompatible return types: "
-						<< types::built_in_type_name_array[static_cast<int>(current_block->return_type->internal_type)]
-						<< ", tried to return type "
-						<< types::built_in_type_name_array[static_cast<int>(current_type)];
-
+					error_message << "return type mismatch: got "
+						<< current_type->get_name()
+						<< ", expected "
+						<< return_type->get_name();
 					throw utils::type_exception(node->range.start, error_message.str());
 				}
-			}*/
+			}
 
 			return false;
 		}
 		
 		bool visit(ir::ast::statement::function_definition* node) override
 		{
-			for (auto& statement : node->block->body)
+			return_type = node->return_type;
+
+			for (const auto& declaration : node->block->body)
 			{
-				statement->visit(this);
-				if (node->return_type->internal_type != types::built_in_type::undefined && return_type != node->return_type->internal_type)
-				{
-					auto coerced_type = coerce_type(node->return_type->internal_type, current_type);
-					if (coerced_type == types::built_in_type::undefined)
-					{
-						std::stringstream error_message;
-						error_message
-							<< "incompatible return types: "
-							<< types::built_in_type_name_array[static_cast<int>(node->return_type->internal_type)]
-							<< ", tried to return type "
-							<< types::built_in_type_name_array[static_cast<int>(current_type)];
-
-						throw utils::type_exception(node->range.start, error_message.str());
-					}
-					return_type = types::built_in_type::undefined;
-				}
-
-				if (return_type != types::built_in_type::undefined
-					&& node->return_type->internal_type == types::built_in_type::undefined)
-				{
-					node->return_type->internal_type = return_type;
-					return_type = types::built_in_type::undefined;
-				}
+				declaration->visit(this);
 			}
-			return true;
-		}
 
+			node->return_type = return_type;
+			
+			return_type = nullptr;
+			
+			return false;
+		}
+		
 		bool visit(ir::ast::statement::statement_block* node) override
 		{
 			current_block = node;

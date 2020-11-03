@@ -13,7 +13,7 @@ namespace seam::core::ir::ast::expression
 {
 	struct expression : statement::statement
 	{
-		explicit expression(const utils::position_range range, std::shared_ptr<types::type> type) :
+		explicit expression(const utils::position_range range, std::shared_ptr<types::base_type> type) :
 			statement(range), type(std::move(type))
 		{}
 
@@ -21,7 +21,7 @@ namespace seam::core::ir::ast::expression
 			statement(range), type(nullptr)
 		{}
 
-		std::shared_ptr<types::type> type;
+		std::shared_ptr<types::base_type> type;
 
 		virtual ~expression() = default;
 	};
@@ -35,7 +35,7 @@ namespace seam::core::ir::ast::expression
 		void visit(visitor* vst) override;
 
 		explicit unary(const utils::position_range range,
-			std::shared_ptr<types::type> type,
+			std::shared_ptr<types::base_type> type,
 			std::unique_ptr<expression> rhs,
 			const lexer::lexeme_type operation) :
 			expression(range, type),
@@ -53,7 +53,7 @@ namespace seam::core::ir::ast::expression
 		void visit(visitor* vst) override;
 
 		explicit binary(const utils::position_range range,
-			std::shared_ptr<types::type> type,
+			std::shared_ptr<types::base_type> type,
 			std::unique_ptr<expression> lhs,
 			std::unique_ptr<expression> rhs,
 			const lexer::lexeme_type operation) :
@@ -68,7 +68,7 @@ namespace seam::core::ir::ast::expression
 	{
 		void visit(visitor* vst) override = 0;
 
-		explicit literal(const utils::position_range range, std::shared_ptr<types::type> type) :
+		explicit literal(const utils::position_range range, std::shared_ptr<types::base_type> type) :
 			expression(range, std::move(type))
 		{}
 
@@ -83,9 +83,7 @@ namespace seam::core::ir::ast::expression
 
 		void visit(visitor* vst) override;
 
-		explicit bool_literal(const utils::position_range range, const bool value) :
-			literal(range, std::make_shared<types::type>(types::built_in_type::bool_)), value(value)
-		{}
+		explicit bool_literal(const utils::position_range range, const bool value);
 	};
 
 	struct string_literal final : literal
@@ -94,9 +92,7 @@ namespace seam::core::ir::ast::expression
 
 		void visit(visitor* vst) override;
 
-		explicit string_literal(const utils::position_range range, std::string value) :
-			literal(range, std::make_shared<types::type>(types::built_in_type::string)), value(std::move(value))
-		{}
+		explicit string_literal(const utils::position_range range, std::string value);
 	};
 
 	struct number_literal final : literal
@@ -106,21 +102,7 @@ namespace seam::core::ir::ast::expression
 
 		void visit(visitor* vst) override;
 
-		explicit number_literal(const utils::position_range range, const std::string& value) :
-			literal(range)
-		{
-			if (value.find('.') != std::string::npos)
-			{
-				this->value = std::stod(value);
-			}
-			else
-			{
-				this->value = std::stoull(value);
-				this->is_unsigned = value[0] != '-';
-			}
-
-			type = std::make_shared<types::type>(types::get_smallest_viable_number_type(this->value, this->is_unsigned));
-		}
+		explicit number_literal(const utils::position_range range, const std::string& value);
 	};
 
 	struct call final : expression 
@@ -141,7 +123,7 @@ namespace seam::core::ir::ast::expression
 
 		void visit(visitor* vst) override;
 
-		explicit variable(const utils::position_range range, std::shared_ptr<types::type> type, std::string name) :
+		explicit variable(const utils::position_range range, std::shared_ptr<types::base_type> type, std::string name) :
 			expression(range, std::move(type)), name(std::move(name))
 		{}
 	};

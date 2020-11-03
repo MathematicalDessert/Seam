@@ -3,7 +3,23 @@
 
 namespace seam::core::ir::ast::statement
 {
-	std::shared_ptr<ir::ast::variable> block::get_variable(const std::string& variable_name)
+	std::shared_ptr<types::base_type> block::get_type(const std::string& type_name)
+	{
+		auto* current_block = this;
+		while (current_block)
+		{
+			if (auto iterator = current_block->registered_types.find(type_name); iterator != current_block->registered_types.cend())
+			{
+				return iterator->second;
+			}
+			current_block = current_block->parent;
+		}
+
+		return types::get_base_type_from_name(type_name);
+	}
+
+	
+	std::shared_ptr<variable> block::get_variable(const std::string& variable_name)
 	{
 		auto* current_block = this;
 		while (current_block)

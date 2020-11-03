@@ -40,7 +40,7 @@ namespace seam::core
 
 			void exit_scope();
 
-			std::shared_ptr<types::type> parse_type(bool can_be_nullable = true);
+			std::shared_ptr<types::base_type> parse_type(bool can_be_nullable = true);
 			std::unique_ptr<ir::ast::parameter> parse_parameter();
 			ir::ast::statement::parameter_list parse_parameter_list();
 

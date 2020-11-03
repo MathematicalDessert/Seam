@@ -39,23 +39,24 @@ namespace seam::core::code_generation
 
 		bool visit(ir::ast::expression::number_literal* node) override
 		{
-			if (std::holds_alternative<double>(node->value))
+			const auto type = static_cast<types::number_type*>(node->type.get());
+
+			if (type->is_float())
 			{
-				auto numerical_value = std::get<double>(node->value);
-				switch (node->type->internal_type)
+				const auto numerical_value = std::get<double>(node->value);
+				switch (type->get_type())
 				{
-					case types::built_in_type::f32: value = llvm::ConstantFP::get(builder.getContext(), llvm::APFloat(static_cast<float>(numerical_value))); break;
-					case types::built_in_type::f64: value = llvm::ConstantFP::get(builder.getContext(), llvm::APFloat(numerical_value)); break;
+					case types::internal_type::t_f32: value = llvm::ConstantFP::get(builder.getContext(), llvm::APFloat(static_cast<float>(numerical_value))); break;
+					case types::internal_type::t_f64: value = llvm::ConstantFP::get(builder.getContext(), llvm::APFloat(numerical_value)); break;
 					default:
 					{
 						throw utils::compiler_exception{ node->range.start, "internal compiler error: unknown floating point type" };
 					}
 				}
 			}
-			else
+			else if (type->is_integer())
 			{
-				auto numerical_value = std::get<std::uint64_t>(node->value);
-				value = llvm::ConstantInt::get(builder.getContext(), llvm::APInt(get_number_bytes_size(node->type->internal_type) * 8, numerical_value));
+				value = llvm::ConstantInt::get(builder.getContext(), llvm::APInt(type->get_size(), std::get<std::uint64_t>(node->value)));
 			}
 		}
 
@@ -150,7 +151,7 @@ namespace seam::core::code_generation
 			else
 			{
 				auto var = current_block->get_variable(node->name);
-				value = builder.CreateAlloca(generator.get_type(var->type->internal_type), nullptr);
+				value = builder.CreateAlloca(var->type->get_llvm_type(builder.getContext()), nullptr);
 			}
 			return false;
 		}
@@ -158,13 +159,13 @@ namespace seam::core::code_generation
 		bool visit(ir::ast::expression::binary* node) override
 		{
 			node->left->visit(this);
-			const auto lhs_value = value;
+			auto lhs_value = value;
 
 			node->right->visit(this);
-			const auto rhs_value = value;
+			auto rhs_value = value;
 
 			// TODO: correct?
-			bool unsigned_operation = false;//resolved_left->is_unsigned && resolved_right->is_unsigned;
+			bool unsigned_operation = true;//resolved_left->is_unsigned && resolved_right->is_unsigned;
 
 			// If either left or right is floating point, use a floating point operation.
 		   /* bool float_operation = std::visit(
@@ -178,6 +179,16 @@ namespace seam::core::code_generation
 
 			const auto float_operation = false;
 
+			if (lhs_value->getType()->isPointerTy())
+			{
+				lhs_value = builder.CreateLoad(lhs_value);
+			}
+
+			if (rhs_value->getType()->isPointerTy())
+			{
+				rhs_value = builder.CreateLoad(rhs_value);
+			}
+			
 			switch (node->operation)
 			{
 			case lexer::lexeme_type::symbol_add:
@@ -279,7 +290,7 @@ namespace seam::core::code_generation
 					value = builder.CreateFCmpOGT(lhs_value, rhs_value, "fogttmp");
 				}
 				else if (unsigned_operation)
-				{
+				{					
 					value = builder.CreateICmpUGT(lhs_value, rhs_value, "ugttmp");
 				}
 				else
@@ -310,16 +321,16 @@ namespace seam::core::code_generation
 		}
 	};
 
-	llvm::Type* code_generator::get_type(types::built_in_type type)
+	llvm::Type* code_generator::get_type(types::internal_type type)
 	{
 		switch (type)
 		{
-		case types::built_in_type::void_: return llvm::Type::getVoidTy(context_);
-		case types::built_in_type::bool_: return llvm::Type::getInt1Ty(context_);
-		case types::built_in_type::u8: case types::built_in_type::i8: return llvm::Type::getInt8Ty(context_);
-		case types::built_in_type::u16: case types::built_in_type::i16: return llvm::Type::getInt16Ty(context_);
-		case types::built_in_type::u32: case types::built_in_type::i32: return llvm::Type::getInt32Ty(context_);
-		case types::built_in_type::u64: case types::built_in_type::i64: return llvm::Type::getInt64Ty(context_);
+		case types::internal_type::t_void: return llvm::Type::getVoidTy(context_);
+		case types::internal_type::t_bool: return llvm::Type::getInt1Ty(context_);
+		case types::internal_type::t_u8: case types::internal_type::t_i8: return llvm::Type::getInt8Ty(context_);
+		case types::internal_type::t_u16: case types::internal_type::t_i16: return llvm::Type::getInt16Ty(context_);
+		case types::internal_type::t_u32: case types::internal_type::t_i32: return llvm::Type::getInt32Ty(context_);
+		case types::internal_type::t_u64: case types::internal_type::t_i64: return llvm::Type::getInt64Ty(context_);
 		}
 
 		return nullptr;
@@ -335,7 +346,7 @@ namespace seam::core::code_generation
 		std::vector<llvm::Type*> param_types;
 		for (const auto& param : function->parameters)
 		{
-			const auto param_type = get_type(param->type->internal_type);
+			const auto param_type = param->type->get_llvm_type(context_);
 			if (!llvm::FunctionType::isValidArgumentType(param_type))
 			{
 				throw utils::compiler_exception(function->range.start, "internal compiler error: invalid parameter type");
@@ -344,7 +355,7 @@ namespace seam::core::code_generation
 		}
 
 
-		auto type = get_type(function->return_type->internal_type);
+		auto type = function->return_type->get_llvm_type(context_);
 
 		const auto function_type = llvm::FunctionType::get(type, llvm::makeArrayRef(param_types), false);
 		function_type_map.emplace(function->mangled_name, function_type);
