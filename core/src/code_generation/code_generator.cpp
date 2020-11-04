@@ -3,6 +3,7 @@
 
 #include "code_generator.hpp"
 #include "../ir/ast/visitor.hpp"
+#include "../types/number_type.hpp"
 #include "../utils/exception.hpp"
 
 namespace seam::core::code_generation
@@ -22,13 +23,14 @@ namespace seam::core::code_generation
 	{
 		llvm::IRBuilder<>& builder;
 		code_generator& generator;
+		std::unordered_map<std::string, llvm::Value*> params;
 		std::unordered_map<ir::ast::expression::variable*, llvm::Value*> variables;
 		ir::ast::statement::block* current_block = nullptr;
 
 		llvm::Value* value = nullptr;
 
-		explicit code_generator_visitor(llvm::IRBuilder<>& builder, code_generator& gen) :
-			builder(builder), generator(gen)
+		explicit code_generator_visitor(llvm::IRBuilder<>& builder, code_generator& gen, std::unordered_map<std::string, llvm::Value*> vars) :
+			builder(builder), generator(gen), params(std::move(vars))
 		{}
 
 		bool visit(ir::ast::expression::bool_literal* node) override
@@ -140,18 +142,26 @@ namespace seam::core::code_generation
 			}
 			return false;
 		}
-
+		
 		bool visit(ir::ast::expression::variable* node) override
 		{
-			const auto& it = variables.find(node);
-			if (it != variables.cend())
+			const auto& p_it = params.find(node->name);
+			if (p_it != params.cend())
 			{
-				value = it->second;
+				value = p_it->second;
 			}
 			else
 			{
-				auto var = current_block->get_variable(node->name);
-				value = builder.CreateAlloca(var->type->get_llvm_type(builder.getContext()), nullptr);
+				const auto& it = variables.find(node);
+				if (it != variables.cend())
+				{
+					value = it->second;
+				}
+				else
+				{
+					auto var = current_block->get_variable(node->name);
+					value = builder.CreateAlloca(var->type->get_llvm_type(builder.getContext()), nullptr);
+				}
 			}
 			return false;
 		}
@@ -352,8 +362,7 @@ namespace seam::core::code_generation
 				throw utils::compiler_exception(function->range.start, "internal compiler error: invalid parameter type");
 			}
 			param_types.push_back(param_type);
-		}
-
+		}		
 
 		auto type = function->return_type->get_llvm_type(context_);
 
@@ -372,6 +381,12 @@ namespace seam::core::code_generation
 			llvm_function = llvm::Function::Create(get_llvm_function_type(function), llvm::GlobalValue::InternalLinkage, function->mangled_name, *llvm_module_);
 		}
 
+		auto args = llvm_function->arg_begin();
+		for (const auto& param : function->parameters)
+		{
+			args++->setName(param->name);
+		}
+		
 		return llvm_function;
 	}
 
@@ -383,7 +398,15 @@ namespace seam::core::code_generation
 			llvm_function);
 		llvm::IRBuilder<> builder(basic_block);
 
-		code_generator_visitor code_gen{ builder, *this };
+		std::unordered_map<std::string, llvm::Value*> params;
+
+		auto args = llvm_function->arg_begin();
+		for (const auto& param : function->parameters)
+		{
+			params.emplace(param->name, args++);
+		}
+		
+		code_generator_visitor code_gen{ builder, *this, params };
 		function->block->visit(&code_gen);
 
 

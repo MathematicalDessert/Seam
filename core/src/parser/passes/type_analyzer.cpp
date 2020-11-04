@@ -187,6 +187,8 @@ namespace seam::core::parser::passes
 		{
 			return_type = node->return_type;
 
+			const auto old_block = current_block;
+			current_block = node->block.get();
 			for (const auto& declaration : node->block->body)
 			{
 				declaration->visit(this);
@@ -195,6 +197,8 @@ namespace seam::core::parser::passes
 			node->return_type = return_type;
 			
 			return_type = nullptr;
+
+			current_block = old_block;
 			
 			return false;
 		}
