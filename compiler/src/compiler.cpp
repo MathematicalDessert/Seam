@@ -15,9 +15,21 @@ int main()
 	{
 		 auto main_module = std::make_unique< seam::core::module>("main",
 			R"(
-fn test(num1: i32, num2: i32)
+type int = i64
+type a = int
+type b = a
+type c = b
+
+fn test(num1: c, num2: c)
 {
-	return num1 + num2 == num2 + num1
+	if (num1 > num2)
+	{
+		return num1
+	}
+	else
+	{
+		return num2 - 10000000 + num1
+	}
 }
 
 fn main()  @constructor

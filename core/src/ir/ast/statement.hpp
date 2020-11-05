@@ -4,6 +4,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include "node.hpp"
@@ -35,6 +36,37 @@ namespace seam::core::ir::ast
 			name(std::move(name)), type(std::move(type))
 		{}
 	};
+
+	enum class symbol_type
+	{
+		symb_type,
+		symb_var,
+	};
+	
+	struct symbol
+	{
+		explicit symbol(std::string name, std::shared_ptr<types::base_type> t) :
+			symbol_name(name), type(symbol_type::symb_type), value(std::move(t))
+		{}
+
+		explicit symbol(std::string name, std::shared_ptr<variable> v) :
+			symbol_name(name), type(symbol_type::symb_var), value(std::move(v))
+		{}
+		
+		std::string symbol_name;
+		symbol_type type;
+
+		bool is_type() { return type == symbol_type::symb_type; }
+		bool is_var() { return type == symbol_type::symb_var; }
+
+		template<typename T>
+		std::shared_ptr<T> get()
+		{
+			return std::get<std::shared_ptr<T>>(value);
+		}		
+	private:
+		std::variant<std::shared_ptr<types::base_type>, std::shared_ptr<variable>> value;
+	};
 	
 	namespace statement
 	{
@@ -53,15 +85,24 @@ namespace seam::core::ir::ast
 			std::string name;
 			block* parent = nullptr;
 
-			std::unordered_map<std::string, std::shared_ptr<types::base_type>> registered_types;
-			std::unordered_map<std::string, std::shared_ptr<variable>> variables;
+			void add_symbol(std::string symbol_name, std::unique_ptr<symbol> new_symbol);
 
+			template<typename T>
+			void add_symbol(std::string symbol_name, std::shared_ptr<T> new_symbol)
+			{
+				symbols.emplace(symbol_name, std::make_unique<symbol>(symbol_name, new_symbol));
+			}
+			
+			symbol* get_symbol(const std::string& symbol);			
+			
 			std::shared_ptr<types::base_type> get_type(const std::string& type_name);
 			std::shared_ptr<variable> get_variable(const std::string& variable_name);
 
 			explicit block(const utils::position_range range) :
 				statement(range)
 			{}
+		private:
+			std::unordered_map<std::string, std::unique_ptr<symbol>> symbols;
 		};
 
 		struct statement_block final : block

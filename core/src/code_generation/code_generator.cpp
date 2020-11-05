@@ -331,21 +331,6 @@ namespace seam::core::code_generation
 		}
 	};
 
-	llvm::Type* code_generator::get_type(types::internal_type type)
-	{
-		switch (type)
-		{
-		case types::internal_type::t_void: return llvm::Type::getVoidTy(context_);
-		case types::internal_type::t_bool: return llvm::Type::getInt1Ty(context_);
-		case types::internal_type::t_u8: case types::internal_type::t_i8: return llvm::Type::getInt8Ty(context_);
-		case types::internal_type::t_u16: case types::internal_type::t_i16: return llvm::Type::getInt16Ty(context_);
-		case types::internal_type::t_u32: case types::internal_type::t_i32: return llvm::Type::getInt32Ty(context_);
-		case types::internal_type::t_u64: case types::internal_type::t_i64: return llvm::Type::getInt64Ty(context_);
-		}
-
-		return nullptr;
-	}
-
 	llvm::FunctionType* code_generator::get_llvm_function_type(ir::ast::statement::function_definition* function)
 	{
 		if (const auto it = function_type_map.find(function->mangled_name); it != function_type_map.cend())

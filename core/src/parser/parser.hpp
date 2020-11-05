@@ -38,7 +38,13 @@ namespace seam::core
 				return std::move(new_block);
 			}
 
-			void exit_scope();
+			template<typename Block, typename List>
+			void exit_scope(Block& block, List body, const lexer::lexeme& lexeme, const lexer::lexeme& close_block)
+			{
+				block.range = generate_range(lexeme, close_block);
+				block.body = std::move(body);
+				current_block_ = current_block_->parent;
+			}
 
 			std::shared_ptr<types::base_type> parse_type(bool can_be_nullable = true);
 			std::unique_ptr<ir::ast::parameter> parse_parameter();

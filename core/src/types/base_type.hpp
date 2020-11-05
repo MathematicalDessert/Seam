@@ -40,16 +40,16 @@ namespace seam::core::types
 		std::string get_name() const;
 		internal_type get_type() const;
 
-		bool is_void() const;
-		bool is_number() const;
-		bool is_boolean() const;
-		bool is_string() const;
-		bool is_class() const;
-		bool is_alias() const;
+		virtual bool is_void() const;
+		virtual bool is_number() const;
+		virtual bool is_boolean() const;
+		virtual bool is_string() const;
+		virtual bool is_class() const;
+		virtual bool is_alias() const;
 
 		std::shared_ptr<base_type> get_base_type();
 
-		virtual llvm::Type* get_llvm_type(llvm::LLVMContext& context) = 0;
+		virtual llvm::Type* get_llvm_type(llvm::LLVMContext& context) { return nullptr; };
 
 		virtual bool operator==(const base_type& other_type) = 0;
 	};

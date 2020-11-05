@@ -3,35 +3,49 @@
 
 namespace seam::core::ir::ast::statement
 {
-	std::shared_ptr<types::base_type> block::get_type(const std::string& type_name)
+	void block::add_symbol(std::string symbol_name, std::unique_ptr<symbol> new_symbol)
 	{
-		auto* current_block = this;
-		while (current_block)
-		{
-			if (auto iterator = current_block->registered_types.find(type_name); iterator != current_block->registered_types.cend())
-			{
-				return iterator->second;
-			}
-			current_block = current_block->parent;
-		}
-
-		return types::get_base_type_from_name(type_name);
+		symbols.emplace(symbol_name, std::move(new_symbol));
 	}
 
-	
-	std::shared_ptr<variable> block::get_variable(const std::string& variable_name)
+	symbol* block::get_symbol(const std::string& symbol)
 	{
 		auto* current_block = this;
 		while (current_block)
 		{
-			if (auto iterator = current_block->variables.find(variable_name); iterator != current_block->variables.cend())
+			if (auto iterator = current_block->symbols.find(symbol); iterator != current_block->symbols.cend())
 			{
-				return iterator->second;
+				return iterator->second.get();
 			}
 			current_block = current_block->parent;
 		}
 
 		return nullptr;
+	}
+	
+	std::shared_ptr<types::base_type> block::get_type(const std::string& type_name)
+	{
+		const auto symb = get_symbol(type_name);
+
+		if (!symb || !symb->is_type())
+		{
+			return types::get_base_type_from_name(type_name);
+		}
+
+		return symb->get<types::base_type>();
+	}
+
+	
+	std::shared_ptr<variable> block::get_variable(const std::string& variable_name)
+	{
+		const auto symb = get_symbol(variable_name);
+
+		if (!symb || !symb->is_var())
+		{
+			return nullptr;
+		}
+
+		return symb->get<variable>();
 	}
 
 	void statement_block::visit(visitor* vst)

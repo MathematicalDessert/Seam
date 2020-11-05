@@ -78,4 +78,9 @@ namespace seam::core::types
 		}
 		return pair->second;
 	}
+
+	std::shared_ptr<base_type> get_base_type_from_type(internal_type type, const bool safe)
+	{
+		return get_base_type_from_name(std::string{ built_in_type_name_array[static_cast<int>(type)] });
+	}
 }

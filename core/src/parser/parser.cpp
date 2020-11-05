@@ -3,6 +3,7 @@
 
 #include "parser.hpp"
 #include "../module.hpp"
+#include "../types/alias_type.hpp"
 #include "../utils/exception.hpp"
 #include "passes/type_analyzer.hpp"
 
@@ -53,11 +54,6 @@ namespace seam::core::parser
 		}
 
 		return current_lexeme;
-	}
-
-	void parser::exit_scope()
-	{
-		current_block_ = current_block_->parent;
 	}
 	
 	std::shared_ptr<types::base_type> parser::parse_type(const bool can_be_nullable)
@@ -399,10 +395,10 @@ namespace seam::core::parser
 					{
 						expect(lexer::lexeme_type::symbol_assign, true);
 					}
-				}				
+				}
 
-				current_block_->variables.emplace(variable_name, std::make_shared<ir::ast::variable>(variable_name, var_type));
-					
+				current_block_->add_symbol(variable_name, std::make_shared<ir::ast::variable>(variable_name, var_type));
+
 				return std::make_unique<ir::ast::statement::variable_assignment>(
 					generate_range(symbol_lexeme, lexer_.peek_lexeme()),
 					std::move(variable_name),
@@ -428,12 +424,7 @@ namespace seam::core::parser
 		{
 			for (const auto& param : *vars)
 			{
-				current_block_->variables.emplace(
-					param->name,
-					std::make_shared<ir::ast::variable>(
-						param->name,
-						param->type)
-				);
+				current_block_->add_symbol(param->name, std::make_shared<ir::ast::variable>(param->name, param->type));
 			}
 		}
 		
@@ -496,10 +487,7 @@ namespace seam::core::parser
 		}
 
 		const auto& close_block = expect(lexer::lexeme_type::symbol_close_brace, true);
-		exit_scope();
-		
-		new_block->range = generate_range(open_block, close_block),
-		new_block->body = std::move(body);
+		exit_scope<ir::ast::statement::statement_block, ir::ast::statement::statement_list>(*new_block, std::move(body), open_block, close_block);
 		
 		return std::move(new_block);
 	}
@@ -542,17 +530,44 @@ namespace seam::core::parser
 
 	std::unique_ptr<ir::ast::statement::type_declaration> parser::parse_type_declaration()
 	{
-		const auto& kw_lexeme = lexer_.next_lexeme(); // consume function keyword
+		const auto& kw_lexeme = lexer_.next_lexeme(); // consume type keyword
 
 		auto type_name = std::string{ expect(lexer::lexeme_type::identifier, true).value };
+
+		if (current_block_->get_type(type_name) != nullptr)
+		{
+			std::stringstream error_message;
+
+			error_message << "type '"
+				   << type_name
+				   << "' redeclaration hides previous definition!";
+
+			throw utils::parser_exception{ kw_lexeme.position, error_message.str() };
+		}
 
 		if (lexer_.peek_lexeme().type == lexer::lexeme_type::symbol_assign) // alias
 		{
 			lexer_.next_lexeme();
+
+			auto alias_type_name = std::string{ expect(lexer::lexeme_type::identifier, true).value };
+			auto alias_t = current_block_->get_type(alias_type_name);
+
+			if (!alias_t)
+			{
+				std::stringstream error_message;
+
+				error_message << "type '"
+					<< type_name
+					<< "' does not exist!";
+			}
+
+			auto alias_type = std::make_shared<types::alias_type>(alias_t);
+			current_block_->add_symbol(type_name, alias_type);
+			
 			return std::make_unique<ir::ast::statement::type_alias_declaration>(
 				generate_range(kw_lexeme, lexer_.peek_lexeme()),
-				std::move(type_name),
-				parse_type(false));
+				type_name,
+				alias_type);
 		}
 
 		ir::ast::statement::parameter_list fields;
@@ -584,9 +599,7 @@ namespace seam::core::parser
 		
 		expect(lexer::lexeme_type::symbol_close_brace, true);
 
-		new_block->range = generate_range(start_type_section, lexer_.peek_lexeme());
-		new_block->body = std::move(body);
-		exit_scope();
+		exit_scope<ir::ast::statement::declaration_block, ir::ast::statement::declaration_list>(*new_block, std::move(body), start_type_section, lexer_.peek_lexeme());
 
 		return std::make_unique<ir::ast::statement::type_class_definition>(
 			generate_range(kw_lexeme, lexer_.peek_lexeme()),
@@ -637,9 +650,7 @@ namespace seam::core::parser
 			body.emplace_back(parse_declaration());
 		}
 
-		new_block->range = generate_range(start, lexer_.peek_lexeme());
-		new_block->body = std::move(body);
-		exit_scope();
+		exit_scope<ir::ast::statement::declaration_block, ir::ast::statement::declaration_list>(*new_block, std::move(body), start, lexer_.peek_lexeme());
 		
 		return std::move(new_block);
 	}
@@ -654,7 +665,6 @@ namespace seam::core::parser
 		type_analyzer_pass.run();
 
 		module_->set_root(std::move(root));
-
 	}
 
 	parser::parser(module* module) :
