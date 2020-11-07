@@ -21,6 +21,9 @@ namespace seam::core::types
 
 		// llvm type
 		llvm::Type* get_llvm_type(llvm::LLVMContext& context) override;
+
+		// resize
+		std::shared_ptr<base_type> resize(number_type* weak_binding_number);
 		
 		// Operator overloads
 		bool operator==(const base_type& other_type) override;

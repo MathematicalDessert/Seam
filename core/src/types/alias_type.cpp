@@ -2,8 +2,8 @@
 
 namespace seam::core::types
 {
-	alias_type::alias_type(std::shared_ptr<base_type> aliased_type) :
-		base_type(internal_type::t_alias), aliased_type(aliased_type)
+	alias_type::alias_type(std::string name, std::shared_ptr<base_type> aliased_type) :
+		base_type(name, internal_type::t_alias), aliased_type(aliased_type)
 	{}
 
 	bool alias_type::is_void() const

@@ -18,7 +18,7 @@ namespace seam::core
 			lexer::lexer lexer_;
 			ir::ast::statement::block* current_block_ = nullptr;
 
-			[[maybe_unused]] lexer::lexeme& expect(lexer::lexeme_type type, bool consume = false);
+			[[maybe_unused]] lexer::lexeme expect(lexer::lexeme_type type, bool consume = false);
 
 			utils::position_range generate_range(const lexer::lexeme& start, const lexer::lexeme& end);
 

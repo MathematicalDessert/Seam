@@ -4,8 +4,8 @@
 
 namespace seam::core::types
 {
-	class_type::class_type() :
-		base_type(internal_type::t_class)
+	class_type::class_type(std::string name) :
+		base_type(name, internal_type::t_class)
 	{}
 
 	void class_type::add_member(const std::string& member_name, const std::shared_ptr<base_type>& member_type)

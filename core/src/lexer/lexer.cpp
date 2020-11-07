@@ -372,7 +372,7 @@ namespace seam::core::lexer
 		module_(module)
 	{}
 	
-	lexeme& lexer::peek_lexeme()
+	lexeme lexer::peek_lexeme()
 	{
 		if (!peeked_lexeme_)
 		{
@@ -382,12 +382,12 @@ namespace seam::core::lexer
 		return peeked_lexeme_.value();
 	}
 
-	lexeme& lexer::current_lexeme()
+	lexeme lexer::current_lexeme()
 	{
 		return *current_lexeme_;
 	}
 	
-	lexeme& lexer::next_lexeme()
+	lexeme lexer::next_lexeme()
 	{
 		if (peeked_lexeme_)
 		{

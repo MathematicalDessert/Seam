@@ -80,6 +80,24 @@ namespace seam::core::types
 		}
 	}
 
+	std::shared_ptr<base_type> number_type::resize(number_type* weak_binding_number)
+	{
+		// types are same.
+		if (is_float() && weak_binding_number->is_float() // matching types
+			|| is_signed() && weak_binding_number->is_signed()
+			|| is_unsigned() && weak_binding_number->is_unsigned()
+			|| is_signed() && weak_binding_number->is_unsigned() // signed and unsigned switch
+			|| is_unsigned() && weak_binding_number->is_signed())
+		{
+			if (weak_binding_number->get_size() > size_)
+			{
+				return weak_binding_number->shared_from_this();
+			}
+		}		
+		
+		return shared_from_this();
+	}
+
 	bool number_type::operator==(const base_type& other_type)
 	{
 		return type_ == other_type.get_type();

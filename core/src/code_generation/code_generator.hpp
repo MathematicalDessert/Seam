@@ -21,6 +21,7 @@ namespace seam::core::code_generation
 		llvm::Function* get_or_declare_function(ir::ast::statement::function_definition* func);
 		void compile_function(ir::ast::statement::function_definition* function);
 	public:
+		llvm::Function* get_or_declare_function(std::string function_name);
 		std::shared_ptr<llvm::Module> generate();
 
 		explicit code_generator(module* module);		

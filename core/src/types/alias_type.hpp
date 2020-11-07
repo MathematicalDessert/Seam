@@ -8,8 +8,11 @@ namespace seam::core::types
 	{
 		std::shared_ptr<base_type> aliased_type;
 	public:
-		explicit alias_type(std::shared_ptr<base_type> aliased_type);
+		explicit alias_type(std::string name, std::shared_ptr<base_type> aliased_type);
 
+		std::size_t get_size() const override { return aliased_type->get_size(); }
+		std::shared_ptr<base_type> unwrap() override { return aliased_type->unwrap(); }
+		
 		bool is_void() const override;
 		bool is_number() const override;
 		bool is_boolean() const override;

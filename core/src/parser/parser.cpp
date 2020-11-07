@@ -4,6 +4,7 @@
 #include "parser.hpp"
 #include "../module.hpp"
 #include "../types/alias_type.hpp"
+#include "../types/class_type.hpp"
 #include "../utils/exception.hpp"
 #include "passes/type_analyzer.hpp"
 
@@ -42,7 +43,7 @@ namespace seam::core::parser
 		return { start.position, end.position };
 	}
 	
-	lexer::lexeme& parser::expect(const lexer::lexeme_type type, const bool consume)
+	lexer::lexeme parser::expect(const lexer::lexeme_type type, const bool consume)
 	{
 		auto& current_lexeme = consume ? lexer_.next_lexeme() : lexer_.peek_lexeme();
 
@@ -561,7 +562,7 @@ namespace seam::core::parser
 					<< "' does not exist!";
 			}
 
-			auto alias_type = std::make_shared<types::alias_type>(alias_t);
+			auto alias_type = std::make_shared<types::alias_type>(type_name, alias_t);
 			current_block_->add_symbol(type_name, alias_type);
 			
 			return std::make_unique<ir::ast::statement::type_alias_declaration>(
@@ -599,6 +600,9 @@ namespace seam::core::parser
 		
 		expect(lexer::lexeme_type::symbol_close_brace, true);
 
+		auto class_type = std::make_shared<types::class_type>(type_name);
+		current_block_->add_symbol(type_name, class_type);
+		
 		exit_scope<ir::ast::statement::declaration_block, ir::ast::statement::declaration_list>(*new_block, std::move(body), start_type_section, lexer_.peek_lexeme());
 
 		return std::make_unique<ir::ast::statement::type_class_definition>(

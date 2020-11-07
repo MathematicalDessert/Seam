@@ -43,9 +43,9 @@ namespace seam::core
 		public:
 			explicit lexer(module* module);
 
-			lexeme& peek_lexeme();
-			lexeme& current_lexeme();
-			lexeme& next_lexeme();
+			lexeme peek_lexeme();
+			lexeme current_lexeme();
+			lexeme next_lexeme();
 		};		
 	}
 }

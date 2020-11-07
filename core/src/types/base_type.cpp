@@ -2,6 +2,10 @@
 
 namespace seam::core::types
 {
+	base_type::base_type(std::string name, const internal_type type) :
+		name_(name), type_(type)
+	{}
+	
 	base_type::base_type(const internal_type type) :
 		type_(type)
 	{}

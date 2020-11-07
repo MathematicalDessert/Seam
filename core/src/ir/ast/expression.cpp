@@ -55,7 +55,7 @@ namespace seam::core::ir::ast::expression
 		{
 			this->value = std::stoull(value);
 			this->is_unsigned = value[0] != '-';
-			type = types::get_base_type_from_name(is_unsigned ? "u64" : "i64", false);
+			type = types::get_smallest_viable_number_type(this->value, this->is_unsigned);
 		}
 	}
 	

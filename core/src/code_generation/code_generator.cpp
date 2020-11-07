@@ -24,7 +24,7 @@ namespace seam::core::code_generation
 		llvm::IRBuilder<>& builder;
 		code_generator& generator;
 		std::unordered_map<std::string, llvm::Value*> params;
-		std::unordered_map<ir::ast::expression::variable*, llvm::Value*> variables;
+		std::unordered_map<std::string, llvm::Value*> variables;
 		ir::ast::statement::block* current_block = nullptr;
 
 		llvm::Value* value = nullptr;
@@ -58,7 +58,7 @@ namespace seam::core::code_generation
 			}
 			else if (type->is_integer())
 			{
-				value = llvm::ConstantInt::get(builder.getContext(), llvm::APInt(type->get_size(), std::get<std::uint64_t>(node->value)));
+				value = llvm::ConstantInt::get(builder.getContext(), llvm::APInt(node->type->get_size(), std::get<std::uint64_t>(node->value), node->is_unsigned));
 			}
 		}
 
@@ -142,6 +142,30 @@ namespace seam::core::code_generation
 			}
 			return false;
 		}
+
+		bool visit(ir::ast::statement::variable_assignment* node) override
+		{
+			const auto& it = variables.find(node->variable_name);
+			if (it != variables.cend())
+			{
+				node->value->visit(this);
+				value = builder.CreateStore(value, it->second);
+			}
+			else
+			{
+				// error
+				//auto var = current_block->get_variable(node->name);
+				auto var = builder.CreateAlloca(node->type->get_llvm_type(builder.getContext()), nullptr, node->variable_name);
+				variables.emplace(node->variable_name, var);
+
+				if (node->value)
+				{
+					node->value->visit(this);
+					value = builder.CreateStore(value, var);
+				}
+			}
+			return false;
+		}
 		
 		bool visit(ir::ast::expression::variable* node) override
 		{
@@ -152,15 +176,16 @@ namespace seam::core::code_generation
 			}
 			else
 			{
-				const auto& it = variables.find(node);
+				const auto& it = variables.find(node->name);
 				if (it != variables.cend())
 				{
 					value = it->second;
 				}
 				else
 				{
-					auto var = current_block->get_variable(node->name);
-					value = builder.CreateAlloca(var->type->get_llvm_type(builder.getContext()), nullptr);
+					// error
+					//auto var = current_block->get_variable(node->name);
+					//value = builder.CreateAlloca(var->type->get_llvm_type(builder.getContext()), nullptr);
 				}
 			}
 			return false;
@@ -318,6 +343,11 @@ namespace seam::core::code_generation
 			return false;
 		}
 
+		bool visit(ir::ast::expression::call* node) override
+		{
+			return false;
+		}
+
 		bool visit(ir::ast::statement::statement_block* node) override
 		{
 			current_block = node;
@@ -397,7 +427,7 @@ namespace seam::core::code_generation
 
 		std::string error;
 		llvm::raw_string_ostream error_stream{ error };
-		if (llvm::verifyFunction(*llvm_function, &error_stream))
+		if (verifyFunction(*llvm_function, &error_stream))
 		{
 			// TODO: Throw exception here!
 		}

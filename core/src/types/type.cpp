@@ -83,4 +83,93 @@ namespace seam::core::types
 	{
 		return get_base_type_from_name(std::string{ built_in_type_name_array[static_cast<int>(type)] });
 	}
+
+	template<typename RangeType, typename ValueType>
+	bool is_in_numerical_limits(ValueType value)
+	{
+		if (!std::numeric_limits<RangeType>::is_integer)
+		{
+			return  (value > 0 ? value : -value) <= std::numeric_limits<RangeType>::max();
+		}
+
+		if (std::numeric_limits<RangeType>::is_signed == std::numeric_limits<ValueType>::is_signed)
+		{
+			return value >= std::numeric_limits<RangeType>::min() &&
+				value <= std::numeric_limits<RangeType>::max();
+		}
+
+		if (std::numeric_limits<RangeType>::is_signed)
+		{
+			return value <= std::numeric_limits<RangeType>::max();
+		}
+		return value >= 0 && value <= std::numeric_limits<RangeType>::max();
+	}
+
+	template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
+	template<class... Ts> overload(Ts...)->overload<Ts...>;
+
+	std::shared_ptr<base_type> get_smallest_viable_number_type(std::variant<std::uint64_t, double> variant, bool is_unsigned)
+	{
+		return get_base_type_from_type(std::visit(overload{
+				[](const double value) -> internal_type {
+					if (is_in_numerical_limits<float, double>(value))
+					{
+						return internal_type::t_f32;
+					}
+
+					if (is_in_numerical_limits<double, double>(value))
+					{
+						return internal_type::t_f64;
+					}
+					return internal_type::undefined;
+				},
+				[is_unsigned](const std::uint64_t value) -> internal_type {
+					if (is_unsigned)
+					{
+						if (is_in_numerical_limits<std::uint8_t, std::uint64_t>(value))
+						{
+							return internal_type::t_u8;
+						}
+
+						if (is_in_numerical_limits<std::uint16_t, std::uint64_t>(value))
+						{
+							return internal_type::t_u16;
+						}
+
+						if (is_in_numerical_limits<std::uint32_t, std::uint64_t>(value))
+						{
+							return internal_type::t_u32;
+						}
+
+						if (is_in_numerical_limits<std::uint64_t, std::uint64_t>(value))
+						{
+							return internal_type::t_u64;
+						}
+						return internal_type::undefined;
+					}
+
+					if (is_in_numerical_limits<std::int8_t, std::uint64_t>(value))
+					{
+						return internal_type::t_i8;
+					}
+
+					if (is_in_numerical_limits<std::int16_t, std::uint64_t>(value))
+					{
+						return internal_type::t_i16;
+					}
+
+					if (is_in_numerical_limits<std::int32_t, std::uint64_t>(value))
+					{
+						return internal_type::t_i32;
+					}
+
+					if (is_in_numerical_limits<std::int64_t, std::uint64_t>(value))
+					{
+						return internal_type::t_i64;
+					}
+
+					return internal_type::undefined;
+				}
+			}, variant), false);
+	}
 }

@@ -8,7 +8,7 @@ namespace seam::core::types
 	{
 		std::unordered_map<std::string, std::shared_ptr<base_type>> members;
 	public:
-		explicit class_type();
+		explicit class_type(std::string name);
 		
 		void add_member(const std::string& member_name, const std::shared_ptr<base_type>& member_type);
 		bool member_exists(const std::string& member_name);

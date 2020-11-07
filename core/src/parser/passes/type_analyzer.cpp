@@ -3,10 +3,11 @@
 #include "../../utils/exception.hpp"
 #include "type_analyzer.hpp"
 #include "../../ir/ast/visitor.hpp"
+#include "../../types/number_type.hpp"
 
 namespace seam::core::parser::passes
 {
-	struct type_analyzer_visitor : ir::ast::visitor
+	struct type_analyzer_visitor final : ir::ast::visitor
 	{
 		ir::ast::statement::block* current_block;
 		std::shared_ptr<types::base_type> current_type;
@@ -80,7 +81,13 @@ namespace seam::core::parser::passes
 					throw utils::type_exception(node->range.start, error_message.str());
 				}
 
-				current_type = lhs_type;
+				auto lhs_number = static_cast<types::number_type*>(lhs_type.get());
+				auto new_type = lhs_number->resize(static_cast<types::number_type*>(rhs_type.get()));
+
+				node->left->type = new_type;
+				node->right->type = new_type;
+				
+				current_type = new_type;
 			}
 			else if (is_comparision_operator(node->operation))
 			{
@@ -100,10 +107,12 @@ namespace seam::core::parser::passes
 						throw utils::type_exception(node->range.start, error_message.str());
 					}
 					
-					if (lhs_type != rhs_type)
-					{
-						node->right->type = node->left->type;
-					}
+					auto lhs_number = static_cast<types::number_type*>(lhs_type.get());
+					auto new_type = lhs_number->resize(static_cast<types::number_type*>(rhs_type.get()));
+
+					node->left->type = new_type;
+					node->right->type = new_type;
+					
 					current_type = types::get_base_type_from_name("bool");
 					return false;
 				}
@@ -139,15 +148,19 @@ namespace seam::core::parser::passes
 				// TODO: Use virtual override for EQ operation on types...
 				
 				// a :i8 = "asd"
-				node->value->visit(this); // expression type
-				if ((!variable_type->is_number() && !current_type->is_number()) && variable_type != current_type)
+
+				if (node->value)
 				{
-					std::stringstream error_message;
-					error_message << "expression of type "
-						<< current_type->get_name()
-						<< "cannot be assigned to variable of type "
-						<< variable_type->get_name();
-					throw utils::type_exception(node->range.start, error_message.str());
+					node->value->visit(this); // expression type
+					if ((!variable_type->is_number() && !current_type->is_number()) && variable_type != current_type)
+					{
+						std::stringstream error_message;
+						error_message << "expression of type "
+							<< current_type->get_name()
+							<< "cannot be assigned to variable of type "
+							<< variable_type->get_name();
+						throw utils::type_exception(node->range.start, error_message.str());
+					}
 				}
 			}
 			return false;
