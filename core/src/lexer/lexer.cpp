@@ -95,7 +95,9 @@ namespace seam::core::lexer
 	void lexer::skip_whitespace()
 	{
 		auto next_character = peek_character();
-		while (next_character != eof_character && std::isspace(next_character))
+
+		// ignore newline, it is our separator character.
+		while (next_character != eof_character && next_character != '\n' && std::isspace(next_character))
 		{
 			consume_character();
 			next_character = peek_character();
@@ -320,6 +322,12 @@ namespace seam::core::lexer
 			case eof_character:
 			{
 				ref.type = lexeme_type::eof;
+				break;
+			}
+			case '\n':
+			{
+				ref.type = lexeme_type::separator;
+				consume_character();
 				break;
 			}
 			case '/':

@@ -56,6 +56,24 @@ namespace seam::core::parser
 
 		return current_lexeme;
 	}
+
+	void parser::eof_expect()
+	{
+		while (lexer_.peek_lexeme().type == lexer::lexeme_type::separator)
+		{
+			lexer_.next_lexeme();
+		}
+		expect(lexer::lexeme_type::eof, true);
+	}
+
+	void parser::skip_separators()
+	{
+		while (lexer_.peek_lexeme().type == lexer::lexeme_type::separator)
+		{
+			lexer_.next_lexeme();
+		}
+	}
+
 	
 	std::shared_ptr<types::base_type> parser::parse_type(const bool can_be_nullable)
 	{
@@ -418,7 +436,8 @@ namespace seam::core::parser
 	std::unique_ptr<ir::ast::statement::statement_block> parser::parse_statement_block(const ir::ast::statement::parameter_list* vars)
 	{
 		const auto& open_block = expect(lexer::lexeme_type::symbol_open_brace, true);
-
+		expect(lexer::lexeme_type::separator, true);
+		
 		auto new_block = enter_scope<ir::ast::statement::statement_block>();
 
 		if (vars)
@@ -484,7 +503,8 @@ namespace seam::core::parser
 					break;
 				}
 			}
-			
+
+			expect(lexer::lexeme_type::separator, true);
 		}
 
 		const auto& close_block = expect(lexer::lexeme_type::symbol_close_brace, true);
@@ -516,6 +536,8 @@ namespace seam::core::parser
 		{
 			attributes.emplace(std::string{ lexer_.next_lexeme().value });
 		}
+
+		expect(lexer::lexeme_type::separator, true);
 		
 		auto function_body = parse_statement_block(&parameter_list);
 
@@ -637,12 +659,14 @@ namespace seam::core::parser
 	{
 		ir::ast::statement::declaration_list body;
 
+		skip_separators();
 		const auto& start = lexer_.peek_lexeme();
 
 		auto new_block = enter_scope<ir::ast::statement::declaration_block>();
 		
 		while (true)
 		{
+			skip_separators();
 			const auto& lexeme = lexer_.peek_lexeme();
 
 			if (!is_type_scope && lexeme.type == lexer::lexeme_type::eof
@@ -663,7 +687,7 @@ namespace seam::core::parser
 	{
 		auto root = parse_declaration_block();
 
-		expect(lexer::lexeme_type::eof);
+		eof_expect();
 
 		passes::type_analyzer type_analyzer_pass(root.get());
 		type_analyzer_pass.run();

@@ -11,6 +11,7 @@ namespace seam::core::lexer
 		eof,
 		identifier,
 		attribute,
+		separator,
 		
 		string_literal,
 		number_literal,
@@ -65,6 +66,7 @@ namespace seam::core::lexer
 		"<eof>",
 		"<identifier>",
 		"<attribute>",
+		"<separator>",
 		"<t_string literal>",
 		"<number literal>",
 		".",

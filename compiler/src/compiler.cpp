@@ -17,7 +17,21 @@ int main()
 			R"(
 type int = i32
 
-fn test(num1: int, num2: int, num3: int)
+fn test(param: u8)
+{
+     var: u8
+	 if (param > 10)
+     {
+          var = param
+     }
+     else
+     {
+          var = 10
+     }
+     return var
+}
+
+fn test2(num1: int, num2: int, num3: int)
 {
 	a: u8
 	if (num1 > num2)

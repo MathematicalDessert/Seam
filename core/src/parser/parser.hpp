@@ -19,7 +19,9 @@ namespace seam::core
 			ir::ast::statement::block* current_block_ = nullptr;
 
 			[[maybe_unused]] lexer::lexeme expect(lexer::lexeme_type type, bool consume = false);
-
+			void eof_expect();
+			void skip_separators();
+			
 			utils::position_range generate_range(const lexer::lexeme& start, const lexer::lexeme& end);
 
 			template<typename T>
