@@ -12,7 +12,7 @@ namespace seam {
 	char LexState::peek_character(const int distance) {
 		const auto character_position = current_read_start_ + current_read_offset_ + distance;
 
-		if (character_position >= source_.size()) {
+		if (character_position >= source_.length()) {
 			return EOF;
 		}
 
@@ -33,7 +33,6 @@ namespace seam {
 		}
 	}
 
-	
 	void LexState::next_character() {
 		const auto character_position = current_read_start_ + current_read_offset_++;
 		const auto character = source_.at(character_position);
@@ -56,6 +55,10 @@ namespace seam {
 	void LexState::discard() {
 		current_read_start_ = current_read_start_ + current_read_offset_;
 		current_read_offset_ = 0;
+	}
+
+	bool LexState::should_save_comments() {
+		return true;
 	}
 
 	// TODO: Write test for this!
@@ -133,5 +136,9 @@ namespace seam {
 		}
 
 		return { line_number, character_position - lines_[line_number] + 1 };
+	}
+
+	SourcePosition LexState::get_current_line_and_column() {
+		return get_line_and_column(current_read_start_ + current_read_offset_);
 	}
 }

@@ -3,26 +3,12 @@
 #include <string>
 #include <vector>
 
+#include "core/Exception.h"
+
 namespace seam {
-	/**
-	 * The SourcePosition struct is a simple container for
-	 * a line and column index.
-	 *
-	 * @author Pelanyo Kamara
-	 */
-	struct SourcePosition {
-		const size_t line;
-		const size_t column;
-
-		SourcePosition(const size_t line, const size_t column)
-			: line(line), column(column) {}
-	};
-
 	/**
 	 * The LexState class contains a state that is used by the lexer to
 	 * traverse through a source.
-	 * 
-	 * @author Pelanyo Kamara
 	 */
 	class LexState {
 		// reference to source
@@ -96,7 +82,7 @@ namespace seam {
 		 * @returns line index.
 		 */
 		[[nodiscard]] size_t get_line(size_t character_position);
-
+		
 		/**
 		 * Returns column position of a character from its index in
 		 * source string.
@@ -113,5 +99,12 @@ namespace seam {
 		 * @returns SourcePosition containing line and column of character position.
 		 */
 		[[nodiscard]] SourcePosition get_line_and_column(size_t character_position);
+
+		/**
+		 * Returns current line & column.
+		 * 
+		 * @returns SourcePosition containing current line and column position.
+		 */
+		[[nodiscard]] SourcePosition get_current_line_and_column();
 	};
 }

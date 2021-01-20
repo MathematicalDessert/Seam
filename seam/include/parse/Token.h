@@ -8,6 +8,10 @@ namespace seam {
 		tkIdentifier, // <identifier>
 		tkAttribute, // @attribute
 		tkComment, // comment
+		
+		tkStringLiteral, // literal
+		tkIntegerLiteral, // integer literal
+		tkFloatLiteral, // float literal
 	};
 	
 	class Token {

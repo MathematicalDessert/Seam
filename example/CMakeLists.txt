@@ -13,5 +13,4 @@ llvm_map_components_to_libnames(LLVM_LIBS support core irreader ${LLVM_TARGETS_T
 
 target_link_libraries(example seam ${LLVM_LIBS})
 
-
 install(TARGETS example RUNTIME DESTINATION bin)
