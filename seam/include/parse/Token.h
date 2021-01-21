@@ -8,10 +8,26 @@ namespace seam {
 		tkIdentifier, // <identifier>
 		tkAttribute, // @attribute
 		tkComment, // comment
-		
+		tkKeyword, // keyword
+
 		tkStringLiteral, // literal
 		tkIntegerLiteral, // integer literal
 		tkFloatLiteral, // float literal
+
+		// keywords
+		kwLet,
+		kwFunction,
+
+		// symbols
+		symbArrow,
+		symbOpenBrace,
+		symbCloseBrace,
+		symbOpenBracket,
+		symbCloseBracket,
+		symbSeparator,
+		symbColon,
+		symbEqual,
+		symbColonEqual,
 	};
 	
 	class Token {
@@ -26,6 +42,10 @@ namespace seam {
 		explicit Token(TokenType type);
 		explicit Token(TokenType type, std::string data);
 		
+		static std::string token_type_to_string(TokenType type);
+		std::string type_as_string();
+		std::string to_string();
+
 		[[nodiscard]] bool is_of_type(TokenType type) const;
 		[[nodiscard]] const std::string& get_data() const;
 	};

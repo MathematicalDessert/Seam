@@ -25,6 +25,8 @@ namespace seam {
 
 		// start lines
 		std::vector<size_t> lines_;
+
+		void skip_whitespace();
 	public:
 		/**
 		 * Default constructor.
@@ -39,7 +41,7 @@ namespace seam {
 		 * @param distance distance from next immediate character to return.
 		 * @returns next character.
 		 */
-		[[nodiscard]] char peek_character(int distance = 0);
+		[[nodiscard]] char peek_character(int distance = 0, bool skip_whitespace = false);
 
 		/**
 		 * Resets collected characters, and skips current.

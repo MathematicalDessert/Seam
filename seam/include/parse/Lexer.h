@@ -15,8 +15,11 @@ namespace seam {
 		static bool is_identifier_character(char identifier_character);
 		static bool is_start_identifier_character(char identifier_character);
 		
+		std::string lex_identifier(Token& token);
+
+		void lex_symbol(Token& token);
 		void lex_number(Token& token);
-		void lex_identifier(Token& token);
+		void lex_identifier_or_keyword(Token& token);
 		void lex_comment(Token& token);
 		void lex_string(Token& token);
 		void lex(Token& token);

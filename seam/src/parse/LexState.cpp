@@ -1,17 +1,29 @@
 #include <utility>
 #include <cmath>
+#include <iostream>
 
 #include "parse/LexState.h"
 
 namespace seam {
+	void LexState::skip_whitespace() {
+		auto character = peek_character();
+		while (character != EOF && std::isspace(character)) {
+			skip_character();
+			character = peek_character();
+		}
+	}
+
 	LexState::LexState(std::string source)
 		: source_(std::move(source)) {
 		lines_.push_back(0);
 	}
 
-	char LexState::peek_character(const int distance) {
-		const auto character_position = current_read_start_ + current_read_offset_ + distance;
+	char LexState::peek_character(const int distance, const bool skip_whitespace) {
+		if (skip_whitespace) {
+			this->skip_whitespace();
+		}
 
+		const auto character_position = current_read_start_ + current_read_offset_ + distance;
 		if (character_position >= source_.length()) {
 			return EOF;
 		}

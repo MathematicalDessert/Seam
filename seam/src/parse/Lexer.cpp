@@ -1,7 +1,26 @@
 #include "parse/Lexer.h"
 #include "parse/Token.h"
 
+#include <unordered_map>
+
 namespace seam {
+	const std::unordered_map<std::string, TokenType> keyword_map = {
+		{ "let", TokenType::kwLet },
+		{ "fn", TokenType::kwFunction },
+	};
+	
+	const std::unordered_map<std::string, TokenType> symbol_map = {
+		{ "->", TokenType::symbArrow },
+		{ "{", TokenType::symbOpenBrace },
+		{ "}", TokenType::symbCloseBrace },
+		{ "(", TokenType::symbOpenBracket },
+		{ ")", TokenType::symbCloseBracket },
+		{ ";", TokenType::symbSeparator },
+		{ ":", TokenType::symbColon },
+		{ "=", TokenType::symbEqual },
+		{ ":=", TokenType::symbColonEqual },
+	};
+
 	bool Lexer::is_identifier_character(const char identifier_character) {
 		return identifier_character == '_'
 				|| std::isalnum(identifier_character);
@@ -10,6 +29,33 @@ namespace seam {
 	bool Lexer::is_start_identifier_character(const char identifier_character) {
 		return identifier_character == '_'
 				|| std::isalpha(identifier_character);
+	}
+
+	void Lexer::lex_symbol(Token& token) {
+		auto counter = 0;
+		auto character = state_.peek_character(counter);
+		
+		std::string symbol_to_search = std::string { character };
+
+		character = state_.peek_character(++counter);
+		while (std::ispunct(character)) {
+			symbol_to_search = symbol_to_search + character;
+			character = state_.peek_character(++counter);
+		}
+
+		// TODO: Could optimise by knowing longest possible
+
+		for (auto i = symbol_to_search.length(); i > 0; i--) {
+			if (auto iterator = symbol_map.find(symbol_to_search.substr(0, i)); iterator != symbol_map.cend()) {
+				for (auto _remove_count = 0; _remove_count < i; _remove_count++) {
+					state_.skip_character();
+				}
+				token.type_ = iterator->second;
+				return; // terminate search & resolve
+			}
+		}
+		
+		throw LexicalException("unknown symbol found", state_.get_current_line_and_column());
 	}
 
 	void Lexer::lex_number(Token& token) {
@@ -56,7 +102,7 @@ namespace seam {
 		token.type_ = is_float ? TokenType::tkFloatLiteral : TokenType::tkIntegerLiteral;
 	}
 	
-	void Lexer::lex_identifier(Token& token) {
+	std::string Lexer::lex_identifier(Token& token) {
 		if (!is_start_identifier_character(state_.peek_character())) {
 			throw LexicalException("invalid identifier", state_.get_current_line_and_column());
 		}
@@ -65,7 +111,19 @@ namespace seam {
 		while (is_identifier_character(state_.peek_character())) {
 			state_.next_character();
 		}
-		token.data_ = state_.consume();
+
+		return state_.consume();
+	}
+
+	void Lexer::lex_identifier_or_keyword(Token& token) {
+		const auto identifier = lex_identifier(token);
+
+		if (auto iterator = keyword_map.find(identifier); iterator != keyword_map.cend()) {
+			token.type_ = iterator->second;
+		} else {
+			token.type_ = TokenType::tkIdentifier;
+			token.data_ = identifier;
+		}
 	}
 
 	void Lexer::lex_comment(Token& token) {
@@ -120,7 +178,7 @@ namespace seam {
 	}
 	
 	void Lexer::lex(Token& token) {
-		switch(state_.peek_character()) {
+		switch(state_.peek_character(0, true)) {
 		case EOF: { // EOF
 			state_.skip_character();
 			token.type_ = TokenType::tkEOF;
@@ -128,7 +186,7 @@ namespace seam {
 		}
 		case '@': { // Attribute
 			state_.skip_character(); // skip @ character
-			lex_identifier(token); // lex attribute name
+			token.data_ = lex_identifier(token); // lex attribute name
 			token.type_ = TokenType::tkAttribute;
 			break;
 		}
@@ -161,11 +219,13 @@ namespace seam {
 			auto peeked_character = state_.peek_character();
 
 			if (is_start_identifier_character(peeked_character)) { // identifier or keyword
-
+				lex_identifier_or_keyword(token);
 			} else if (std::isdigit(peeked_character)) { // number literal
 				lex_number(token);
-			} else { // symbol
-
+			} else if (std::ispunct(peeked_character)) { // symbol
+				lex_symbol(token);
+			} else {
+				// TODO: throw unknown character!
 			}
 			break;
 		}
@@ -176,6 +236,7 @@ namespace seam {
 		: state_(source), peeked_token_(TokenType::tkEOF), current_token_(TokenType::tkEOF) {}
 
 	TokenType Lexer::peek() {
+		peeked_token_ = Token(TokenType::tkEOF);
 		lex(peeked_token_);
 		
 		return peeked_token_.type_;
@@ -186,6 +247,7 @@ namespace seam {
 			current_token_ = peeked_token_;
 			peeked_token_ = Token(TokenType::tkEOF);
 		} else {
+			current_token_ = Token(TokenType::tkEOF);
 			lex(current_token_);
 		}
 		
