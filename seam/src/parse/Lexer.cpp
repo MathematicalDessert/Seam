@@ -7,6 +7,7 @@ namespace seam {
 	const std::unordered_map<std::string, TokenType> keyword_map = {
 		{ "let", TokenType::kwLet },
 		{ "fn", TokenType::kwFunction },
+		{ "type", TokenType::kwType },
 	};
 	
 	const std::unordered_map<std::string, TokenType> symbol_map = {
@@ -91,7 +92,7 @@ namespace seam {
 			if (is_hex && !std::isxdigit(peeked_character)) {
 				throw LexicalException("non-xdigit character found in xdigit", state_.get_current_line_and_column());
 			} else if (!std::isdigit(peeked_character)) {
-				throw LexicalException("invalid number", state_.get_current_line_and_column());
+				break;
 			}
 
 			state_.next_character();
@@ -236,8 +237,10 @@ namespace seam {
 		: state_(source), peeked_token_(TokenType::tkEOF), current_token_(TokenType::tkEOF) {}
 
 	TokenType Lexer::peek() {
-		peeked_token_ = Token(TokenType::tkEOF);
-		lex(peeked_token_);
+		if (peeked_token_.type_ == TokenType::tkEOF) {
+			peeked_token_ = Token(TokenType::tkEOF);
+			lex(peeked_token_);
+		}
 		
 		return peeked_token_.type_;
 	}

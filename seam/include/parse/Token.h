@@ -8,7 +8,6 @@ namespace seam {
 		tkIdentifier, // <identifier>
 		tkAttribute, // @attribute
 		tkComment, // comment
-		tkKeyword, // keyword
 
 		tkStringLiteral, // literal
 		tkIntegerLiteral, // integer literal
@@ -17,6 +16,8 @@ namespace seam {
 		// keywords
 		kwLet,
 		kwFunction,
+		kwType,
+		kwReturn,
 
 		// symbols
 		symbArrow,
@@ -42,7 +43,14 @@ namespace seam {
 		explicit Token(TokenType type);
 		explicit Token(TokenType type, std::string data);
 		
+		/**
+		 * Returns token type as a string.
+		 * 
+		 * @param type type of token.
+		 * @returns token type as a string.
+		 */
 		static std::string token_type_to_string(TokenType type);
+		
 		std::string type_as_string();
 		std::string to_string();
 

@@ -1,21 +1,13 @@
 #include <iostream>
-#include <parse/LexState.h>
-#include "parse/Lexer.h"
+#include <parse/Parser.h>
+#include <core/Module.h>
 
-int main() {
-	auto source = seam::LexState(R"(
-		@constructor
-		fn main(arg: i64) -> i64 {
-			let a = "asd"
-		}
-)");
-	auto lexer = seam::Lexer(source);
+int main(int argc, char *argv[]) {
+	auto mod = std::make_unique<seam::Module>("test", std::string { argv[1] });
+	auto parser = new seam::Parser(mod.get());
 
 	try {
-		while (lexer.next() != seam::TokenType::tkEOF) {
-			std::cout << lexer.token().to_string() << " ";
-		}
-		std::cout << std::endl;
+		parser->parse();
 	} catch (seam::LexicalException& e) {
 		std::cout << e.get_position().line << ":" << e.get_position().column << ":";
 		std::cout << e.what() << std::endl;

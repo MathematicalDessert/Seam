@@ -38,6 +38,6 @@ namespace seam {
 		/**
 		 * 
 		 */
-		[[nodiscard]] LexState get_lex_state() const;
+		[[nodiscard]] LexState get_lex_state();
 	};
 }

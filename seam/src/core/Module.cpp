@@ -24,7 +24,7 @@ namespace seam {
 		return source_;
 	}
 
-	LexState Module::get_lex_state() const {
+	LexState Module::get_lex_state() {
 		return LexState(source_);
 	}
 }
