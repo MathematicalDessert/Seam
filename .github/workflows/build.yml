@@ -41,3 +41,10 @@ jobs:
       shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
       run: cmake --build . --config $BUILD_TYPE
+
+      # upload artifact, example binary
+    - name: Upload Binaries
+      uses: actions/upload-artifact@v1
+      with:
+        name: upload binary
+        path: output/bin/
