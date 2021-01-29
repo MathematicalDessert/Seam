@@ -1,4 +1,4 @@
-# Seam Example Compiler Executable
+# Seam Example Executable
 
 # Find LLVM Installation
 find_package(LLVM CONFIG REQUIRED)

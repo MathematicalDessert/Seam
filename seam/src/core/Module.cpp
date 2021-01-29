@@ -23,8 +23,4 @@ namespace seam {
 	const std::string& Module::get_source() const noexcept {
 		return source_;
 	}
-
-	LexState Module::get_lex_state() {
-		return LexState(source_);
-	}
 }

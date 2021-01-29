@@ -13,4 +13,5 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output/bin)
 # Add other projects
 add_subdirectory(seam)
 add_subdirectory(example)
+add_subdirectory(compiler)
 add_subdirectory(test)

@@ -34,10 +34,5 @@ namespace seam {
 		 * @returns source of module file.
 		 */
 		[[nodiscard]] const std::string& get_source() const noexcept;
-
-		/**
-		 * 
-		 */
-		[[nodiscard]] LexState get_lex_state();
 	};
 }

@@ -23,4 +23,19 @@ namespace seam {
 		explicit LexicalException(const std::string& reason, SourcePosition position)
 			: CompilerException(reason, position) {}
 	};
+
+	struct ParserException : CompilerException {
+		explicit ParserException(const std::string& reason, SourcePosition position)
+			: CompilerException(reason, position) {}
+	};
+
+	struct ExpectedTokenNotFound final : ParserException {
+		explicit ExpectedTokenNotFound(const std::string& reason, SourcePosition position)
+			: ParserException(reason, position) {}
+	};
+
+	struct SymbolNotFound final : CompilerException {
+		explicit SymbolNotFound(const std::string& reason, SourcePosition position)
+			: CompilerException(reason, position) {}
+	};
 }

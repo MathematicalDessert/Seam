@@ -15,7 +15,8 @@ add_library(seam
 			"src/parse/Parser.cpp" 
 			"src/ast/Module.cpp" 
 			"src/core/Module.cpp" 
-			"src/core/ModuleManager.cpp")
+			"src/core/ModuleManager.cpp"
+			"src/symbol/ScopedSymbolTable.cpp")
 
 install(TARGETS seam
 		LIBRARY DESTINATION lib

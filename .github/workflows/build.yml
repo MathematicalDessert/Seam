@@ -46,5 +46,5 @@ jobs:
     - name: Upload Binaries
       uses: actions/upload-artifact@v1
       with:
-        name: upload binary
+        name: example
         path: ${{runner.workspace}}/seam/build/output/bin/

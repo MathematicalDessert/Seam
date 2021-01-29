@@ -8,9 +8,14 @@
 namespace seam {
     class Parser {
         Module* module_;
+        std::unique_ptr<Lexer> lexer_;
 
-        std::unique_ptr<ast::statement::Statement> parse_statement(Lexer& lexer);
-        std::unique_ptr<ast::Module> parse_module(Lexer& lexer);
+        void expect(TokenType expected_token_type);
+        std::string expect_and_get_value(TokenType expected_token_type);
+
+        std::unique_ptr<ast::statement::FunctionDefinitionStatement> parse_function_definition_statement();
+        std::unique_ptr<ast::statement::Statement> parse_statement();
+        std::unique_ptr<ast::Module> parse_module();
     public:
         explicit Parser(Module* module);
 

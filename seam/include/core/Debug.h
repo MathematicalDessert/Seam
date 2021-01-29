@@ -7,7 +7,7 @@
 namespace seam {
     struct Debug {
         static void output_module_tokens(Module* mod) {
-            auto lex_state = mod->get_lex_state();
+            auto lex_state = LexState(mod->get_source());
             Lexer lexer = Lexer(lex_state);
             while (lexer.next() != TokenType::tkEOF) {
                 std::cout << lexer.token().to_string() << " ";
