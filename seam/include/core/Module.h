@@ -2,8 +2,6 @@
 
 #include <string_view>
 
-#include "parse/LexState.h"
-
 namespace seam {
 	/**
 	 * Internal representation of a source file.

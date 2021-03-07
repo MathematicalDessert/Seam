@@ -1,6 +1,16 @@
 #include "symbol/ScopedSymbolTable.h"
 
 namespace seam {
+    ScopedSymbolTable::ScopedSymbolTable(std::string identifier)
+	    : scope_identifier_(identifier) {
+	    
+    }
+
+	ScopedSymbolTable::ScopedSymbolTable(std::string identifier, std::unique_ptr<ScopedSymbolTable> parent)
+		: scope_identifier_(identifier), parent_(std::move(parent)) {
+		
+	}
+	
     bool ScopedSymbolTable::symbol_exists(const std::string& symbol_name, const bool search_all_scopes) {
         auto scope = this;
 

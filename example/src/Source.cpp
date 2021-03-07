@@ -4,8 +4,8 @@
 #include <core/Debug.h>
 
 int main(int argc, char *argv[]) {
-	auto mod = std::make_unique<seam::Module>("test", std::string { argv[1] });
-	auto parser = new seam::Parser(mod.get());
+	const auto mod = std::make_unique<seam::Module>("test", std::string{ argv[1] });
+	const auto parser = new seam::Parser(mod.get());
 
 	seam::Debug::output_module_tokens(mod.get());
 

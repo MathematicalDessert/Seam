@@ -48,7 +48,7 @@ namespace seam {
 
 		for (auto i = symbol_to_search.length(); i > 0; i--) {
 			if (auto iterator = symbol_map.find(symbol_to_search.substr(0, i)); iterator != symbol_map.cend()) {
-				for (auto _remove_count = 0; _remove_count < i; _remove_count++) {
+				for (size_t remove_count = 0; remove_count < i; remove_count++) {
 					state_.skip_character();
 				}
 				token.type_ = iterator->second;
@@ -60,8 +60,8 @@ namespace seam {
 	}
 
 	void Lexer::lex_number(Token& token) {
-		bool is_hex = false;
-		bool is_float = false;
+		auto is_hex = false;
+		auto is_float = false;
 
 		auto peeked_character = state_.peek_character();
 		while (true) {
@@ -226,6 +226,7 @@ namespace seam {
 			} else if (std::ispunct(peeked_character)) { // symbol
 				lex_symbol(token);
 			} else {
+				throw LexicalException(string_format("unknown character found in stream: '%s'\n", peeked_character), state_.get_current_line_and_column());
 				// TODO: throw unknown character!
 			}
 			break;

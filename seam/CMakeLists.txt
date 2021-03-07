@@ -16,7 +16,7 @@ add_library(seam
 			"src/ast/Module.cpp" 
 			"src/core/Module.cpp" 
 			"src/core/ModuleManager.cpp"
-			"src/symbol/ScopedSymbolTable.cpp")
+			"src/symbol/ScopedSymbolTable.cpp" "src/ast/Declaration.cpp" "src/symbol/FunctionSymbol.cpp" "src/symbol/Symbol.cpp")
 
 install(TARGETS seam
 		LIBRARY DESTINATION lib

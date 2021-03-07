@@ -16,6 +16,9 @@ namespace seam {
 
         bool symbol_exists(const std::string& symbol, bool serach_all_scopes = true);
     public:
+        explicit ScopedSymbolTable(std::string identifier);
+        explicit ScopedSymbolTable(std::string identifier, std::unique_ptr<ScopedSymbolTable> parent);
+    	
         /**
          * Returns symbol or throws exception if symbol is not found.
          * 

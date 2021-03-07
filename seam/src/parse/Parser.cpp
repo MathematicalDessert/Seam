@@ -17,7 +17,7 @@ namespace seam {
         return lexer_->token().get_data();
     }
 
-    std::unique_ptr<ast::statement::FunctionDefinitionStatement> Parser::parse_function_definition_statement() {
+    std::unique_ptr<ast::FunctionDeclaration> Parser::parse_function_declaration() {
         auto function_name = expect_and_get_value(TokenType::tkIdentifier);
 
         
@@ -25,16 +25,34 @@ namespace seam {
         expect(TokenType::symbOpenBrace);
 
         expect(TokenType::symbCloseBrace);
-        return nullptr;
+        return std::make_unique<ast::FunctionDeclaration>(function_name);
     }
 
+    std::unique_ptr<ast::TypeDeclaration> Parser::parse_type_declaration() {
+        auto type_name = expect_and_get_value(TokenType::tkIdentifier);
+
+        if (lexer_->peek() == TokenType::symbEqual) {
+			// Type Alias
+            return std::make_unique<ast::TypeAliasDeclaration>(type_name);
+        } else {
+        	// TODO: finish types
+
+            expect(TokenType::symbOpenBrace);
+        	// TODO: Parse type body
+            expect(TokenType::symbCloseBrace);
+        	
+            return std::make_unique<ast::TypeDeclaration>(type_name);
+        }        
+    }
+
+	
     std::unique_ptr<ast::statement::Statement> Parser::parse_statement() {
         std::unique_ptr<ast::statement::Statement> statement;
 
         switch (lexer_->peek()) {
             case TokenType::kwFunction: {
                 lexer_->next(); // discard keyword token
-                statement = parse_function_definition_statement();
+                //statement = nullptr;//parse_function_declaration();
                 break;
             }
             case TokenType::tkEOF: [[fallthrough]];
@@ -48,8 +66,28 @@ namespace seam {
         return std::move(statement); // TODO: Parse statements.
     }
 
-    std::unique_ptr<ast::Module> Parser::parse_module() {
-        auto mod = std::make_unique<ast::Module>();
+	std::unique_ptr<ast::Declaration> Parser::parse_declaration() {
+        std::unique_ptr<ast::Declaration> declaration;
+
+        switch (lexer_->peek()) {
+        case TokenType::kwFunction: {
+            lexer_->next(); // discard function token
+            declaration = parse_function_declaration();
+            break;
+        }
+        case TokenType::kwType: {
+            lexer_->next();
+            declaration = parse_type_declaration();
+            break;
+        }
+        default: break;
+        }
+    	
+        return std::move(declaration);
+	}
+
+    std::unique_ptr<ast::DeclarationBlock> Parser::parse_declaration_block() {
+        auto mod = std::make_unique<ast::DeclarationBlock>();
 
         while (true) {
             auto next_token = lexer_->peek();
@@ -58,16 +96,16 @@ namespace seam {
                 break;
             }
 
-            mod->add_statement(parse_statement());
+            mod->add_declaration(parse_declaration());
         }
 
         return std::move(mod);
     }
 
-    std::unique_ptr<ast::Module> Parser::parse() {
+    std::unique_ptr<ast::DeclarationBlock> Parser::parse() {
         auto module_source = LexState(module_->get_source());
         lexer_ = std::make_unique<Lexer>(module_source);
 
-        return parse_module();
+        return parse_declaration_block();
     }
 }
