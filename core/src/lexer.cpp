@@ -39,7 +39,7 @@ namespace seam {
 
 		while (current_character != character) {
 			if (current_character == WEOF) {
-				throw UnexpectedEOFException(
+				throw generate_exception<LexicalException>(
 					get_current_pos(),
 					LEX_UNEXPECTED_WEOF_EXCEPTION_FMT,
 					character);
@@ -76,7 +76,7 @@ namespace seam {
 				}
 
 				if (next_character() == WEOF) {
-					throw UnexpectedEOFException(
+					throw generate_exception<LexicalException>(
 						get_current_pos(),
 						LEX_UNEXPECTED_WEOF_EXCEPTION_FMT,
 						L"///");
@@ -92,7 +92,71 @@ namespace seam {
 	}
 	
 	void Lexer::tokenize_number_literal() {
-		
+		const auto is_hex = peek_character() == '0' && peek_character(1) == 'x';
+		auto is_float = !is_hex && peek_character() == '.';
+
+		if (is_hex) {
+			next_character();
+			next_character();
+		} else if (is_float) {
+			next_character();
+		}
+
+		if (const auto next_char = next_character(); is_hex && !std::iswxdigit(next_char) || !is_hex && !std::iswdigit(next_char)) {
+			throw generate_exception<LexicalException>(
+				get_current_pos(),
+				LEX_MALFORMED_NUMBER_LITERAL);
+		}
+
+		while(true) {
+			const auto peeked_character = peek_character();
+			if (std::iswspace(peeked_character) || peeked_character == WEOF) {
+				break; // parse number
+			}
+
+			if (is_hex) {
+				if (!std::iswxdigit(peeked_character)) {
+					throw generate_exception<LexicalException>(
+						get_current_pos(),
+						EXPECTED_BUT_GOT,
+						L"hex-digit",
+						peeked_character
+						);
+				}
+			} else {
+				if (is_float && peeked_character == '.') {
+					throw generate_exception<LexicalException>(
+						get_current_pos(),
+						LEX_MALFORMED_FLOATING_POINT_NUMBER_LITERAL,
+						LEX_MALFORMED_FLOAT_TWO_POINTS);
+				}
+
+				if (!is_float && peeked_character == '.') {
+					is_float = true;
+				} else if (!std::iswdigit(peeked_character)) {
+					if (std::iswspace(peeked_character) || peeked_character == WEOF) {
+						break;
+					}
+
+					throw generate_exception<LexicalException>(
+						get_current_pos(),
+						EXPECTED_BUT_GOT,
+						L"digit",
+						peeked_character
+						);
+				}
+			}
+			next_character();
+		}
+
+		current_end_idx_ = source_reader_.current_pos();
+		next_token_ = std::make_unique<Token>(
+			SymbolType::NumberLiteral,
+			consume(),
+			SourcePosition{
+				current_start_idx_,
+				current_end_idx_ - 1
+			});
 	}
 	
 	void Lexer::tokenize_symbol() {
@@ -133,7 +197,7 @@ namespace seam {
 			std::move(lexeme),
 			SourcePosition {
 				current_start_idx_,
-				current_end_idx_
+				current_end_idx_ - 1
 			});
 	}
 	
@@ -142,14 +206,15 @@ namespace seam {
 
 		// set start read index
 		current_start_idx_ = source_reader_.start_pointer();
-
+		
 		if (const auto next_character = peek_character(); next_character == '"') {
 			tokenize_string();
 		} else if (next_character == '/' && peek_character(1) == '/') {
 			source_reader_.discard(2);
 			lex_comment();
 			tokenize();
-		} else if (std::iswdigit(next_character)) {
+		} else if (std::iswdigit(next_character) 
+			|| next_character == L'.' && std::iswdigit(peek_character(1))) {
 			tokenize_number_literal();
 		} else if (std::iswpunct(next_character)) {
 			tokenize_symbol();

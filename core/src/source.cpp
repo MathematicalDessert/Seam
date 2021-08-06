@@ -29,7 +29,7 @@ namespace seam {
 			return WEOF;
 		}
 		
-		return source_->string_src_.at(start_pointer_ + read_pointer_);
+		return source_->string_src_.at(start_pointer_ + read_pointer_ + num_chars_ahead);
 	}
 	
 	wchar_t SourceReader::next_char() {

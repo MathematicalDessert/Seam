@@ -31,12 +31,12 @@ namespace seam {
 	 * Takes in a Source and generates tokens.
 	 */
 	class Lexer {
-		// Take in a string
-		// Tokenize string
-
 		// reference to source
 		SourceReader source_reader_;
-		
+
+		/*
+		 * 
+		 */
 		[[nodiscard]] wchar_t peek_character(size_t num_characters_ahead = 0) const;
 		wchar_t next_character();
 		std::wstring consume();
