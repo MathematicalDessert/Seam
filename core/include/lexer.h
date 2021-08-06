@@ -17,14 +17,19 @@ namespace seam {
 		// token type
 		const SymbolType type;
 		// token lexeme
-		const std::string lexeme;
+		const std::wstring lexeme;
 		// token position
 		const SourcePosition position;
 
-		Token(const SymbolType type, std::string lexeme, const SourcePosition position)
+		Token(const SymbolType type, std::wstring lexeme, const SourcePosition position)
 			: type(type), lexeme(std::move(lexeme)), position(position) {}
 	};
-	
+
+	/**
+	 * Lexical Analysis Class.
+	 *
+	 * Takes in a Source and generates tokens.
+	 */
 	class Lexer {
 		// Take in a string
 		// Tokenize string
@@ -32,14 +37,14 @@ namespace seam {
 		// reference to source
 		SourceReader source_reader_;
 		
-		[[nodiscard]] char peek_character(size_t num_characters_ahead = 0) const;
-		char next_character();
-		std::string consume();
+		[[nodiscard]] wchar_t peek_character(size_t num_characters_ahead = 0) const;
+		wchar_t next_character();
+		std::wstring consume();
 
 		[[nodiscard]] SourcePosition get_current_pos() const;
 		
-		void expect(char character);
-		std::string read_until(char character);
+		void expect(wchar_t character);
+		std::wstring read_until(wchar_t character);
 
 		void lex_comment();
 		

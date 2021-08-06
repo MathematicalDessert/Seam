@@ -2,4 +2,4 @@
 
 #include <string>
 
-const std::string LEX_UNEXPECTED_EOF_EXCEPTION_FMT = "expected {} but got EOF";
+const std::wstring LEX_UNEXPECTED_WEOF_EXCEPTION_FMT = L"expected {} but got WEOF";

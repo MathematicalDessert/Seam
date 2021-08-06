@@ -5,11 +5,11 @@
 namespace seam {
 	// contains source
 	class Source {
-		std::string string_src_;
+		std::wstring string_src_;
 	public:
-		explicit Source(std::string source);
+		explicit Source(std::wstring source);
 		
-		[[nodiscard]] const std::string& get() const { return string_src_; }
+		[[nodiscard]] const std::wstring& get() const { return string_src_; }
 
 		friend class SourceReader;
 	};
@@ -20,7 +20,7 @@ namespace seam {
 		size_t start_pointer_ = 0;
 		size_t read_pointer_ = 0;
 
-		std::string buffer_;
+		std::wstring buffer_;
 		
 		const Source* source_;
 	public:
@@ -29,11 +29,11 @@ namespace seam {
 		[[nodiscard]] size_t length() const { return source_->string_src_.length(); }
 
 		// character read methods
-		[[nodiscard]] char get_char(size_t pos) const;
-		[[nodiscard]] char peek_char(size_t num_chars_ahead = 0) const;
-		[[nodiscard]] char next_char();
+		[[nodiscard]] wchar_t get_char(size_t pos) const;
+		[[nodiscard]] wchar_t peek_char(size_t num_chars_ahead = 0) const;
+		[[nodiscard]] wchar_t next_char();
 
-		[[nodiscard]] std::string consume();
+		[[nodiscard]] std::wstring consume();
 		
 		void discard();
 		void discard(size_t num_characters);

@@ -2,7 +2,7 @@
 #include <source.h>
 
 TEST_CASE("source reader reads next characters", "[SourceReader]") {
-	const std::string test_source_1 = "The quick brown fox jumped over the lazy dog";
+	const std::wstring test_source_1 = L"The quick brown fox jumped over the lazy dog";
 	const auto source = std::make_unique<seam::Source>(test_source_1);
 
 	seam::SourceReader source_reader{
@@ -23,12 +23,12 @@ TEST_CASE("source reader reads next characters", "[SourceReader]") {
 		for (size_t it = 0; it < source_reader.length(); it++) {
 			static_cast<void>(source_reader.next_char());
 		}
-		REQUIRE(source_reader.next_char() == EOF);
+		REQUIRE(source_reader.next_char() == WEOF);
 	}
 }
 
 TEST_CASE("source reader consumes correctly", "[SourceReader]") {
-	const std::string test_source_1 = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+	const std::wstring test_source_1 = L"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
 	const auto source = std::make_unique<seam::Source>(test_source_1);
 
 	seam::SourceReader source_reader{
@@ -64,7 +64,7 @@ TEST_CASE("source reader peeks correctly", "[SourceReader]") {
 
 /*
 TEST_CASE("source reader reads correctly", "[SourceReader]") {
-	const std::string test_source_1 = L"The quick brown fox jumped over the lazy dog";
+	const std::wstring test_source_1 = L"The quick brown fox jumped over the lazy dog";
 	const auto source = std::make_unique<seam::Source>(test_source_1);
 	
 	seam::SourceReader source_reader {
@@ -106,15 +106,15 @@ TEST_CASE("source reader reads correctly", "[SourceReader]") {
 	SECTION("read overflow") {
 		source_reader.discard(source_reader.length());
 		
-		REQUIRE(source_reader.peek_char() == EOF);
-		REQUIRE(source_reader.next_char() == EOF);
+		REQUIRE(source_reader.peek_char() == WEOF);
+		REQUIRE(source_reader.next_char() == WEOF);
 	}
 
 	SECTION("discard with length out of bound") {
 		source_reader.discard(source_reader.length() + 90);
 
-		REQUIRE(source_reader.peek_char() == EOF);
-		REQUIRE(source_reader.next_char() == EOF);
+		REQUIRE(source_reader.peek_char() == WEOF);
+		REQUIRE(source_reader.next_char() == WEOF);
 	}
 
 	SECTION("discard with length in bound") {
@@ -141,11 +141,11 @@ TEST_CASE("source reader reads correctly", "[SourceReader]") {
 		REQUIRE(source_reader.consume() == test_source_1.substr(read_len));
 	}
 
-	SECTION("get char out of bound") {
-		REQUIRE(source_reader.get_char(10000) == EOF);
+	SECTION("get wchar_t out of bound") {
+		REQUIRE(source_reader.get_char(10000) == WEOF);
 	}
 
-	SECTION("get char in bound") {
+	SECTION("get wchar_t in bound") {
 		REQUIRE(source_reader.get_char(2) == test_source_1[2]);
 	}
 }*/

@@ -1,11 +1,12 @@
 #include "source.h"
 
+#include <cwctype>
 #include <utility>
 
 namespace seam {
-	// TODO: Add EOF!
+	// TODO: Add WEOF!
 	
-	Source::Source(std::string source)
+	Source::Source(std::wstring source)
 		: string_src_(std::move(source)) {
 		
 	}
@@ -15,31 +16,31 @@ namespace seam {
 		
 	}
 
-	char SourceReader::get_char(const size_t pos) const {
+	wchar_t SourceReader::get_char(const size_t pos) const {
 		if (pos >= length()) {
-			return EOF;
+			return WEOF;
 		}
 		
 		return source_->string_src_.at(pos);
 	}
 
-	char SourceReader::peek_char(const size_t num_chars_ahead) const {
+	wchar_t SourceReader::peek_char(const size_t num_chars_ahead) const {
 		if (start_pointer_ + read_pointer_ + num_chars_ahead >= length()) {
-			return EOF;
+			return WEOF;
 		}
 		
 		return source_->string_src_.at(start_pointer_ + read_pointer_);
 	}
 	
-	char SourceReader::next_char() {
+	wchar_t SourceReader::next_char() {
 		if (start_pointer_ + read_pointer_ >= length()) {
-			return EOF;
+			return WEOF;
 		}
 		
 		return source_->string_src_.at(start_pointer_ + read_pointer_++);
 	}
 
-	std::string SourceReader::consume() {
+	std::wstring SourceReader::consume() {
 		auto new_str =  source_->string_src_.substr(start_pointer_, read_pointer_);
 
 		discard();
@@ -57,7 +58,7 @@ namespace seam {
 	}
 
 	void SourceReader::discard_whitespace() {
-		while (std::isspace(peek_char())) {
+		while (std::iswspace(peek_char())) {
 			discard(1);
 		}
 	}
