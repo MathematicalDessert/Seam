@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 
 #include "source.h"
@@ -45,6 +46,10 @@ namespace seam {
 		
 		void expect(wchar_t character);
 		std::wstring read_until(wchar_t character);
+
+		using check_next_fn = std::function<SymbolType()>;
+		
+		SymbolType check_next(const std::unordered_map<wchar_t, SymbolType>& map, SymbolType default_symbol);
 
 		void lex_comment();
 		

@@ -8,9 +8,15 @@ namespace seam {
 		StringLiteral,
 		NumberLiteral,
 
-		PlusSign,
-		MinusSign,
-		ForwardSlash,
+		OpAdd, // +
+		OpAddEq, // +=
+		OpIncrement, // ++
+		OpSub, // -
+		OpSubEq, // -=
+		OpDecrement, // --
+		OpDiv, // /
+		OpMul, // *
+		Arrow, // ->
 
 		KeywordLet,
 		KeywordFn,
@@ -23,19 +29,5 @@ namespace seam {
 		KeywordIf,
 		KeywordElse,
 		KeywordElseIf,
-	};
-
-	const std::unordered_map<std::wstring, SymbolType> str_to_keyword_map {
-		{ L"let", SymbolType::KeywordLet },
-		{ L"fn", SymbolType::KeywordFn },
-		{ L"type", SymbolType::KeywordType },
-		{ L"while", SymbolType::KeywordWhile },
-		{ L"for", SymbolType::KeywordFor },
-		{ L"true", SymbolType::KeywordTrue },
-		{ L"false", SymbolType::KeywordFalse },
-		{ L"import", SymbolType::KeywordImport },
-		{ L"if", SymbolType::KeywordIf },
-		{ L"else", SymbolType::KeywordElse },
-		{ L"elseif", SymbolType::KeywordElseIf }
 	};
 }

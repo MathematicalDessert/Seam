@@ -5,6 +5,22 @@
 #include "localisation/localisation.h"
 
 namespace seam {
+	namespace {
+		const std::unordered_map<std::wstring, SymbolType> str_to_keyword_map {
+			{ L"let", SymbolType::KeywordLet },
+			{ L"fn", SymbolType::KeywordFn },
+			{ L"type", SymbolType::KeywordType },
+			{ L"while", SymbolType::KeywordWhile },
+			{ L"for", SymbolType::KeywordFor },
+			{ L"true", SymbolType::KeywordTrue },
+			{ L"false", SymbolType::KeywordFalse },
+			{ L"import", SymbolType::KeywordImport },
+			{ L"if", SymbolType::KeywordIf },
+			{ L"else", SymbolType::KeywordElse },
+			{ L"elseif", SymbolType::KeywordElseIf }
+		};
+	}
+
 	Lexer::Lexer(const Source* source)
 		: source_reader_(source) {}
 
@@ -47,6 +63,13 @@ namespace seam {
 		source_reader_.discard(1);
 
 		return lexeme;
+	}
+
+	SymbolType Lexer::check_next(const std::unordered_map<wchar_t, SymbolType>& map, SymbolType default_symbol) {
+		if (map.find(peek_character()) != map.cend()) {
+			return map.at(next_character());
+		}
+		return default_symbol;
 	}
 
 	void Lexer::lex_comment() {
@@ -148,7 +171,7 @@ namespace seam {
 			consume(),
 			SourcePosition{
 				current_start_idx_,
-				current_end_idx_ - 1
+				current_end_idx_ - 1 + 1 +-+-+-+ 1
 			});
 	}
 	
@@ -156,15 +179,34 @@ namespace seam {
 		SymbolType symbol;
 		
 		switch (next_character()) {
-		case '+': symbol = SymbolType::PlusSign; break;
-		case '-': symbol = SymbolType::MinusSign; break;
-		case '/': symbol = SymbolType::ForwardSlash; break;
-		default: break;
+		case '+': {
+			symbol = check_next({
+				{ '+', SymbolType::OpIncrement },
+				{ '=', SymbolType::OpAddEq }},
+				SymbolType::OpAdd);
+			break;
+		}
+		case '-': {
+			symbol = check_next({
+				{ '-', SymbolType::OpDecrement },
+				{ '=', SymbolType::OpSubEq },
+				{ '>', SymbolType::Arrow }},
+				SymbolType::OpSub);
+			break;
+		}
+		case '/': symbol = SymbolType::OpDiv; break;
+		case '*': symbol = SymbolType::OpMul; break;
+		default: {
+			throw generate_exception<LexicalException>(
+				get_current_pos(),
+				L"unknown symbol found {}",
+				L"");
+		}
 		}
 
 		next_token_ = std::make_unique<Token>(
 			symbol,
-			nullptr,
+			L"",
 			SourcePosition{
 				current_start_idx_,
 				current_end_idx_

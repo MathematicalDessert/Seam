@@ -229,3 +229,28 @@ TEST_CASE("lexing keywords works correctly") {
 	REQUIRE(lexer.peek() == seam::SymbolType::KeywordIf);
 	lexer.next();
 }
+
+TEST_CASE("lexing symbols") {
+	const auto identifier = std::make_unique<seam::Source>(LR"(-> ++ + - ++- -++ +-+-)");
+	seam::Lexer lexer(identifier.get());
+
+	for (auto i = 0; i < 12; i++) {
+		switch (i) {
+		case 0: REQUIRE(lexer.peek() == seam::SymbolType::Arrow); break;
+		case 1: REQUIRE(lexer.peek() == seam::SymbolType::OpIncrement); break;
+		case 2: REQUIRE(lexer.peek() == seam::SymbolType::OpAdd); break;
+		case 3: REQUIRE(lexer.peek() == seam::SymbolType::OpSub); break;
+		case 4: REQUIRE(lexer.peek() == seam::SymbolType::OpIncrement); break;
+		case 5: REQUIRE(lexer.peek() == seam::SymbolType::OpSub); break;
+		case 6: REQUIRE(lexer.peek() == seam::SymbolType::OpSub); break;
+		case 7: REQUIRE(lexer.peek() == seam::SymbolType::OpIncrement); break;
+		case 8: REQUIRE(lexer.peek() == seam::SymbolType::OpAdd); break;
+		case 9: REQUIRE(lexer.peek() == seam::SymbolType::OpSub); break;
+		case 10: REQUIRE(lexer.peek() == seam::SymbolType::OpAdd); break;
+		case 11: REQUIRE(lexer.peek() == seam::SymbolType::OpSub); break;
+		default: FAIL(); break;
+		}
+
+		lexer.next();
+	}
+}
