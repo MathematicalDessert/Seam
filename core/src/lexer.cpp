@@ -26,13 +26,6 @@ namespace seam {
 			source_reader_.current_pos(),
 		};
 	}
-	
-	void Lexer::expect(const wchar_t character) {
-		if (character != peek_character()) {
-			// throw exception
-		}
-		source_reader_.discard(1);
-	}
 
 	std::wstring Lexer::read_until(const wchar_t character) {
 		auto current_character = peek_character();
@@ -179,15 +172,37 @@ namespace seam {
 	}
 	
 	void Lexer::tokenize_identifier_or_keyword() {
-		next_token_ = std::make_unique<Token>(
-			SymbolType::None,
-			L"",
-			SourcePosition{ current_start_idx_, source_reader_.read_pointer() });
+		bool must_be_identifier = false;
+
+		auto next_char = peek_character();
+		
+		while (std::iswalnum(next_char) || next_char == '_') {
+			if (!must_be_identifier && next_char == '_') {
+				must_be_identifier = true;
+			}
+
+			next_character();
+			next_char = peek_character();
+		}
+
+		current_end_idx_ = source_reader_.current_pos();
+
+		if (const auto identifier = consume(); !must_be_identifier && str_to_keyword_map.find(identifier) != str_to_keyword_map.cend()) {
+			next_token_ = std::make_unique<Token>(
+				str_to_keyword_map.at(identifier),
+				L"",
+				SourcePosition{ current_start_idx_, current_end_idx_ - 1 });
+		} else {
+			next_token_ = std::make_unique<Token>(
+				SymbolType::Identifier,
+				identifier,
+				SourcePosition{ current_start_idx_, current_end_idx_ - 1 });
+		}
 	}
 		
 	void Lexer::tokenize_string() {
 		// opening tag
-		expect('"');
+		source_reader_.discard(1);
 
 		// read until closing tag
 		auto lexeme = read_until('"');
@@ -213,13 +228,23 @@ namespace seam {
 			source_reader_.discard(2);
 			lex_comment();
 			tokenize();
-		} else if (std::iswdigit(next_character) 
+		} else if (std::iswdigit(next_character)
 			|| next_character == L'.' && std::iswdigit(peek_character(1))) {
 			tokenize_number_literal();
+		} else if (std::iswalpha(next_character) || next_character == '_') {
+			tokenize_identifier_or_keyword();
 		} else if (std::iswpunct(next_character)) {
 			tokenize_symbol();
-		} else {
-			tokenize_identifier_or_keyword();
+		} 
+
+		if (!next_token_) {
+			// empty?
+			next_token_ = std::make_unique<Token>(
+				SymbolType::None,
+				L"",
+				SourcePosition{
+					0, 0
+				});
 		}
 	}
 

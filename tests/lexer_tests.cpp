@@ -171,3 +171,61 @@ TEST_CASE("lexing number literals works correctly") {
 		REQUIRE_THROWS_WITH(lexer.next(), "expected hex-digit but got 'N'");
 	}
 }
+
+TEST_CASE("lexing identifiers works correctly") {
+	const auto identifier = std::make_unique<seam::Source>(LR"(this_is_not_a_keyword thisIsAlsoAKeyword AnotherIdentifier _Identifier _1IdentifierWithNumber Identifier_with_Number1)");
+	seam::Lexer lexer(identifier.get());
+
+	for (auto i = 0; i < 5; i++) {
+		REQUIRE(lexer.peek() == seam::SymbolType::Identifier);
+		const auto token = lexer.next();
+
+		switch (i) {
+		case 0: {
+			REQUIRE(token->lexeme == L"this_is_not_a_keyword");
+			break;
+		}
+		case 1: {
+			REQUIRE(token->lexeme == L"thisIsAlsoAKeyword");
+			break;
+		}
+		case 2: {
+			REQUIRE(token->lexeme == L"AnotherIdentifier");
+			break;
+		}
+		case 3: {
+			REQUIRE(token->lexeme == L"_Identifier");
+			break;
+		}
+		case 4: {
+			REQUIRE(token->lexeme == L"_1IdentifierWithNumber");
+			break;
+		}
+		case 5: {
+			REQUIRE(token->lexeme == L"Identifier_with_Number1");
+			break;
+		}
+		default: FAIL(); break; // should never reach this.
+		}
+	}
+}
+
+TEST_CASE("lexing keywords works correctly") {
+	const auto identifier = std::make_unique<seam::Source>(LR"(let variable fn variable_again if)");
+	seam::Lexer lexer(identifier.get());
+
+	REQUIRE(lexer.peek() == seam::SymbolType::KeywordLet);
+	lexer.next();
+
+	REQUIRE(lexer.peek() == seam::SymbolType::Identifier);
+	lexer.next();
+
+	REQUIRE(lexer.peek() == seam::SymbolType::KeywordFn);
+	lexer.next();
+
+	REQUIRE(lexer.peek() == seam::SymbolType::Identifier);
+	lexer.next();
+
+	REQUIRE(lexer.peek() == seam::SymbolType::KeywordIf);
+	lexer.next();
+}
