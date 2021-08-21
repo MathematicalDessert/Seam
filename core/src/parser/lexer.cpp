@@ -1,6 +1,7 @@
-#include "lexer.h"
 #include <cwctype>
+#include <unordered_map>
 
+#include "parser/lexer.h"
 #include "exception.h"
 #include "localisation/localisation.h"
 
@@ -20,9 +21,6 @@ namespace seam {
 			{ L"elseif", SymbolType::KeywordElseIf }
 		};
 	}
-
-	Lexer::Lexer(const Source* source)
-		: source_reader_(source) {}
 
 	wchar_t Lexer::peek_character(const size_t num_characters_ahead) const {
 		return source_reader_.peek_char(num_characters_ahead);
@@ -72,7 +70,7 @@ namespace seam {
 		return default_symbol;
 	}
 
-	void Lexer::lex_comment() {
+	void Lexer::tokenize_comment() {
 		const auto is_long_comment = peek_character() == '/';
 
 		if (is_long_comment) {
@@ -171,7 +169,7 @@ namespace seam {
 			consume(),
 			SourcePosition{
 				current_start_idx_,
-				current_end_idx_ - 1 + 1 +-+-+-+ 1
+				current_end_idx_ - 1
 			});
 	}
 	
@@ -268,7 +266,7 @@ namespace seam {
 			tokenize_string();
 		} else if (next_character == '/' && peek_character(1) == '/') {
 			source_reader_.discard(2);
-			lex_comment();
+			tokenize_comment();
 			tokenize();
 		} else if (std::iswdigit(next_character)
 			|| next_character == L'.' && std::iswdigit(peek_character(1))) {
@@ -289,6 +287,9 @@ namespace seam {
 				});
 		}
 	}
+
+	Lexer::Lexer(const Source* source)
+		: source_reader_(source) {}
 
 	SymbolType Lexer::peek() {
 		if (!next_token_) {

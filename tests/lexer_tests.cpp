@@ -1,5 +1,5 @@
 #include <catch.hpp>
-#include <lexer.h>
+#include <parser/lexer.h>
 
 #include <exception.h>
 

@@ -10,7 +10,7 @@ list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 add_definitions(${LLVM_DEFINITIONS})
 
 add_library(seam 
-			"src/lexer.cpp" "src/source.cpp" "include/source_position.h" "include/exception.h" "include/localisation/en_gb.h" "include/localisation/localisation.h" )
+			"src/parser/lexer.cpp" "src/source.cpp" "include/source_position.h" "include/exception.h" "include/localisation/en_gb.h" "include/localisation/localisation.h"  "include/parser/parser.h" "include/ast/ast.h" "src/parser/parser.cpp")
 
 target_include_directories(seam PRIVATE ${LLVM_INCLUDE_DIRS})
 #llvm_map_components_to_libnames(llvm_libs Support Core IRReader)
