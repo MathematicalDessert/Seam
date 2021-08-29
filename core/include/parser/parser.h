@@ -41,7 +41,15 @@ namespace seam {
 			}
 		}
 
-		ast::statement::StatementList parse_statement_list();
+		std::wstring try_parse_type();
+		ast::ParameterList parse_parameter_list();
+
+		std::unique_ptr<ast::expression::Expression> parse_expression();
+
+		std::unique_ptr<ast::statement::Statement> parse_statement();
+
+		std::unique_ptr<ast::statement::LetStatement> parse_let_statement();
+		std::unique_ptr<ast::statement::StatementBlock> parse_statement_block();
 
 		std::unique_ptr<ast::FunctionDeclaration> parse_function_declaration();
 		ast::DeclarationList parse_declaration_list();

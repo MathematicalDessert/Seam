@@ -194,6 +194,22 @@ namespace seam {
 		}
 		case '/': symbol = SymbolType::OpDiv; break;
 		case '*': symbol = SymbolType::OpMul; break;
+		case '(': symbol = SymbolType::SymbOpenParen; break;
+		case ')': symbol = SymbolType::SymbCloseParen; break;
+		case '{': symbol = SymbolType::SymbOpenBrace; break;
+		case '}': symbol = SymbolType::SymbCloseBrace; break;
+		case '=': {
+			symbol = check_next({
+				{ '=', SymbolType::OpEq } },
+				SymbolType::OpAssign);
+			break;
+		}
+		case ':': {
+			symbol = check_next({
+				{ '=', SymbolType::ColonEquals } },
+				SymbolType::Colon);
+			break;
+		}
 		default: {
 			throw generate_exception<LexicalException>(
 				get_current_pos(),

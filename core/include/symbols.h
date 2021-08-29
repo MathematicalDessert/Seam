@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string>
-
 namespace seam {
 	/**
 	 * Symbol Types.
@@ -20,7 +18,16 @@ namespace seam {
 		OpDecrement, // --
 		OpDiv, // /
 		OpMul, // *
+		OpAssign, // =
+		OpEq, // ==
 		Arrow, // ->
+		Colon, // :
+		ColonEquals, //
+		SymbOpenParen, // (
+		SymbCloseParen, // )
+		SymbOpenBrace, // {
+		SymbCloseBrace, // }
+		
 
 		KeywordLet,
 		KeywordFn,
@@ -36,7 +43,7 @@ namespace seam {
 	};
 
 
-	static inline auto symbol_type_to_name(const SymbolType type) {
+	static auto symbol_type_to_name(const SymbolType type) {
 		switch (type) {
 		case SymbolType::KeywordFn: return L"fn";
 		case SymbolType::Identifier: return L"<identifier>";
