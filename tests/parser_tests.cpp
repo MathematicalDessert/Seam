@@ -7,9 +7,20 @@ TEST_CASE("test asdasdasd") {
 	const std::wstring raw_source = LR"(
 		fn test() -> none {
 			{
-				let b := ("asd"
+				let b := true
 			}
-			let a: string = "asd2"
+
+			if (true) {
+				let a: string = "asd2"
+			} elseif (false) {
+				let c := 23
+			} else {
+				let d: number = 1234
+			}
+
+			while (true) {
+				
+			}
 		}
 	)";
 	const auto source = std::make_unique<seam::Source>(raw_source);
@@ -18,7 +29,7 @@ TEST_CASE("test asdasdasd") {
 	const auto parser = new seam::Parser(std::unique_ptr<seam::Lexer>(&lexer));
 
 	REQUIRE_NOTHROW([&]() {
-		auto ast = parser->parse();
+		const	auto ast = parser->parse();
 
 		seam::ast::PrintVisitor visitor;
 		ast->accept(visitor);

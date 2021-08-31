@@ -5,13 +5,14 @@
 #include <stdexcept>
 #include <format>
 #include <utility>
+#include <fmt/format.h>
 
 #include "source_position.h"
 
 namespace seam {
 	template<class T, typename... Args>
 	T generate_exception(const SourcePosition source_position, std::wstring exception_message, Args&&... args) {
-		return T(source_position, std::format(exception_message, args...));
+		return T(source_position, fmt::format(exception_message.c_str(), args...));
 	}
 
 	class SeamException : public std::runtime_error {

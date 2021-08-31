@@ -218,6 +218,7 @@ namespace seam {
 		}
 		}
 
+		source_reader_.discard();
 		next_token_ = std::make_unique<Token>(
 			symbol,
 			L"",

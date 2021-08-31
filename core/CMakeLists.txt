@@ -1,4 +1,5 @@
 # Find LLVM Installation
+find_package(fmt CONFIG REQUIRED)
 #find_package(LLVM CONFIG REQUIRED)
 
 # Include LLVM includes and definitions
@@ -15,7 +16,7 @@ add_library(seam
 target_include_directories(seam PRIVATE ${LLVM_INCLUDE_DIRS})
 #llvm_map_components_to_libnames(llvm_libs Support Core IRReader)
 
-target_link_libraries(seam PRIVATE ${llvm_libs})
+target_link_libraries(seam PRIVATE ${llvm_libs} fmt::fmt-header-only)
 
 #install(TARGETS seam
 #		LIBRARY DESTINATION lib

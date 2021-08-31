@@ -14,6 +14,8 @@ namespace seam::ast {
 
 	template <typename Visitor>
 	struct Node<Visitor> {
+		virtual ~Node() = default;
+
 		virtual void accept(Visitor& visitor) = 0;
 	};
 
@@ -43,22 +45,30 @@ namespace seam::ast {
 	namespace expression {
 		struct Expression : virtual Node<PrintVisitor> { };
 
+		template<typename T>
 		struct Literal : Expression, virtual Node<PrintVisitor> {
-			std::wstring value;
+			T value;
 
 		protected:
-			explicit Literal(std::wstring value)
+			~Literal() = default;
+
+			explicit Literal(T value)
 				: value(std::move(value)) {}
 		};
 
-		struct StringLiteral : Literal, Node<StringLiteral, PrintVisitor> {
+		struct StringLiteral : Literal<std::wstring>, Node<StringLiteral, PrintVisitor> {
 			explicit StringLiteral(std::wstring value)
 				: Literal(std::move(value)) {}
 		};
 
-		struct NumberLiteral : Literal, Node<NumberLiteral, PrintVisitor> {
+		struct NumberLiteral : Literal<std::wstring>, Node<NumberLiteral, PrintVisitor> {
 			explicit NumberLiteral(std::wstring value)
 				: Literal(std::move(value)) {}
+		};
+
+		struct BooleanLiteral : Literal<bool>, Node<BooleanLiteral, PrintVisitor> {
+			explicit BooleanLiteral(const bool value)
+				: Literal(value) {}
 		};
 	}
 	
@@ -74,7 +84,7 @@ namespace seam::ast {
 			std::unique_ptr<expression::Expression> expr;
 
 			LetStatement(std::wstring name, std::wstring type, std::unique_ptr<expression::Expression> expr)
-				: name(std::move(name)), expr(std::move(expr)) {}
+				: name(std::move(name)), type(std::move(type)), expr(std::move(expr)) {}
 		};
 
 		struct StatementBlock : Statement, Node<StatementBlock, PrintVisitor> {
@@ -83,6 +93,28 @@ namespace seam::ast {
 			StatementBlock(
 				StatementList list
 			) : statements(std::move(list)) {}
+		};
+
+		struct IfStatement : Statement, Node<IfStatement, PrintVisitor> {
+			std::unique_ptr<expression::Expression> cond;
+			std::unique_ptr<StatementBlock> body;
+			std::unique_ptr<StatementBlock> else_body;
+
+			IfStatement(
+				std::unique_ptr<expression::Expression> condition,
+				std::unique_ptr<StatementBlock> body,
+				std::unique_ptr<StatementBlock> else_body = nullptr
+			) : cond(std::move(condition)), body(std::move(body)), else_body(std::move(else_body)) {}
+		};
+
+		struct WhileStatement : Statement, Node<WhileStatement, PrintVisitor> {
+			std::unique_ptr<expression::Expression> cond;
+			std::unique_ptr<StatementBlock> body;
+
+			WhileStatement(
+				std::unique_ptr<expression::Expression> cond,
+				std::unique_ptr<StatementBlock> body
+			) : cond(std::move(cond)), body(std::move(body)) {}
 		};
 	}
 

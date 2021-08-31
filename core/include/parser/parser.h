@@ -34,6 +34,8 @@ namespace seam {
 			const auto token = lexer_->next();
 			if constexpr (std::is_same_v<T, std::wstring>) {
 				return token->lexeme;
+			} else if constexpr (std::is_same_v<T, double>) {
+				return std::stod(token->lexeme);
 			}
 
 			if constexpr (std::is_same_v<T, int>) {
@@ -44,8 +46,11 @@ namespace seam {
 		std::wstring try_parse_type();
 		ast::ParameterList parse_parameter_list();
 
+		std::unique_ptr<ast::expression::Expression> parse_primary_expression();
 		std::unique_ptr<ast::expression::Expression> parse_expression();
 
+		std::unique_ptr<ast::statement::WhileStatement> parse_while_statement();
+		std::unique_ptr<ast::statement::IfStatement> parse_if_statement();
 		std::unique_ptr<ast::statement::Statement> parse_statement();
 
 		std::unique_ptr<ast::statement::LetStatement> parse_let_statement();
