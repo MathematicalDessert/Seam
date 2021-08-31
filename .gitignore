@@ -33,6 +33,8 @@
 
 # Output
 out/
-/.vs
-/.vscode
-/build
+*.hint
+.vs/
+*.user
+*.runsettings
+*.json

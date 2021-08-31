@@ -1,16 +1,14 @@
-# Seam Language Compiler
+# CMakeList.txt : CMake project for Seam, include source and define
+# project specific logic here.
+#
+cmake_minimum_required (VERSION 3.8)
 
-cmake_minimum_required(VERSION 3.5)
+project ("Seam")
 
-project(seam VERSION 0.0.1 LANGUAGES CXX)
-
-# Set C++ Standard (this is supposedly outdated?)
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output/bin)
+set(CMAKE_CXX_STANDARD 20)
 
 # Add other projects
 add_subdirectory(core)
-add_subdirectory(compiler)
-add_subdirectory(test)
+add_subdirectory(tests)
+
+# TODO: Add tests and install targets if needed.
