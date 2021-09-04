@@ -4,7 +4,7 @@
 
 namespace seam::ast {
 	void PrintVisitor::visit(Program& program) {
-		append(L"digraph Program {\n\tProgram");
+		append(L"digraph Program {\nProgram");
 		for (const auto& decl : program.body) {
 			const auto next_decl = node_count_ + 1;
 			decl->accept(*this);
@@ -41,6 +41,11 @@ namespace seam::ast {
 		append(fmt::format(L"{} [shape=record label=\"{{BooleanLiteral | {}}}\"]", ++node_count_, expr.value));
 	}
 
+	void PrintVisitor::visit(expression::UnaryExpression& expr) {
+		//
+	}
+
+
 	void PrintVisitor::visit(statement::StatementBlock& block) {
 		const auto current_node = ++node_count_;
 		append(fmt::format(L"{} [shape=record label=\"{{StatementBlock}}\"]", current_node));
@@ -59,4 +64,6 @@ namespace seam::ast {
 	void PrintVisitor::visit(statement::WhileStatement& stat) {
 
 	}
+
+	//TODO: BinaryExpr visitor
 }

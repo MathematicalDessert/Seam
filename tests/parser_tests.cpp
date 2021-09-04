@@ -10,17 +10,7 @@ TEST_CASE("test asdasdasd") {
 				let b := true
 			}
 
-			if (true) {
-				let a: string = "asd2"
-			} elseif (false) {
-				let c := 23
-			} else {
-				let d: number = 1234
-			}
-
-			while (true) {
-				
-			}
+			let a: string = "asd2"
 		}
 	)";
 	const auto source = std::make_unique<seam::Source>(raw_source);

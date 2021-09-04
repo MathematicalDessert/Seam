@@ -6,6 +6,7 @@
 namespace seam {
 	class Parser {
 		std::unique_ptr<Lexer> lexer_;
+		size_t last_binding_power_ = 0;
 		
 		template <SymbolType T>
 		void expect(const bool consume = true) const {
@@ -47,7 +48,7 @@ namespace seam {
 		ast::ParameterList parse_parameter_list();
 
 		std::unique_ptr<ast::expression::Expression> parse_primary_expression();
-		std::unique_ptr<ast::expression::Expression> parse_expression();
+		std::unique_ptr<ast::expression::Expression> parse_expression(size_t right_binding_power = 0);
 
 		std::unique_ptr<ast::statement::WhileStatement> parse_while_statement();
 		std::unique_ptr<ast::statement::IfStatement> parse_if_statement();

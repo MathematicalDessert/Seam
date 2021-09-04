@@ -9,6 +9,7 @@ namespace seam::ast {
 		struct StringLiteral;
 		struct NumberLiteral;
 		struct BooleanLiteral;
+		struct UnaryExpression;
 	}
 
 	struct Declaration;
@@ -21,12 +22,13 @@ namespace seam::ast {
 		struct IfStatement;
 	}
 
-	class PrintVisitor final : Visitor<
+	class PrintVisitor final : Visitor <
 		Program,
 		statement::StatementBlock,
 		expression::StringLiteral,
 		expression::NumberLiteral,
 		expression::BooleanLiteral,
+		expression::UnaryExpression,
 		FunctionDeclaration,
 		statement::LetStatement,
 		statement::IfStatement,
@@ -44,6 +46,7 @@ namespace seam::ast {
 		void visit(expression::StringLiteral& expr) override;
 		void visit(expression::NumberLiteral& expr) override;
 		void visit(expression::BooleanLiteral& expr) override;
+		void visit(expression::UnaryExpression& expr) override;
 		void visit(statement::StatementBlock& block) override;
 		void visit(statement::IfStatement& stat) override;
 		void visit(statement::WhileStatement& stat) override;

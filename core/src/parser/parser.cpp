@@ -1,6 +1,19 @@
 #include "parser/parser.h"
+
 #include "exception.h"
 #include <ast/print_visitor.h>
+#include <unordered_map>
+
+namespace {
+	struct EnumClassHash {
+		template<typename T>
+		size_t operator()(T t) const {
+			return static_cast<size_t>(t);
+		}
+	};
+	template <typename Key>
+	using HashType = typename std::conditional<std::is_enum_v<Key>, EnumClassHash, std::hash<Key>>::type;
+}
 
 namespace seam {
 	bool is_unary_operator(const SymbolType symbol) {
@@ -62,12 +75,43 @@ namespace seam {
 		return nullptr;
 	}
 
-	std::unique_ptr<ast::expression::Expression> Parser::parse_expression() {
+	const std::unordered_map<SymbolType, size_t, HashType<SymbolType>> binary_priority {
+		{ SymbolType::OpAdd, 6 }, { SymbolType::OpSub, 6 }
+	};
+	std::unique_ptr<ast::expression::Expression> Parser::parse_expression(const size_t right_binding_power) {
 		// TODO: Check is unary operator & add operator precedence
 
+		auto final_binding_power = 0;
 		std::unique_ptr<ast::expression::Expression> expr;
-		if constexpr (true) {
+		if (is_unary_operator(lexer_->peek())) {
+			auto op = lexer_->next()->type;
+			auto inner_expr = parse_expression();
+
+			expr = std::make_unique<ast::expression::UnaryExpression>(op, std::move(inner_expr));
+		} else {
 			expr = parse_primary_expression();
+		}
+
+		auto op = lexer_->peek();
+		while (true) {
+			const auto it = binary_priority.find(op);
+			final_binding_power = it->second;
+			if (it == binary_priority.cend() ? true : right_binding_power >= final_binding_power) {
+				break;
+			}
+
+			lexer_->next(); // skip op
+
+			auto rhs_expr = parse_expression();
+			expr = std::make_unique<ast::expression::BinaryExpression>(
+				op,
+				std::move(expr),
+				std::move(rhs_expr));
+
+			//if (!)
+			//parse_expression(final_binding_power);
+
+			const auto binding_power = last_binding_power_;
 		}
 
 		// TODO: add

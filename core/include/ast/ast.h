@@ -5,6 +5,7 @@
 #include <memory>
 
 #include <exception.h>
+#include <symbols.h>
 
 namespace seam::ast {
 	class PrintVisitor;
@@ -54,6 +55,23 @@ namespace seam::ast {
 
 			explicit Literal(T value)
 				: value(std::move(value)) {}
+		};
+
+		struct UnaryExpression : Expression, Node<UnaryExpression, PrintVisitor> {
+			SymbolType op;
+			std::unique_ptr<Expression> expr;
+
+			explicit UnaryExpression(const SymbolType op, std::unique_ptr<Expression> expr)
+				: op(op), expr(std::move(expr)) {}
+		};
+
+		struct BinaryExpression : Expression, Node<BinaryExpression, PrintVisitor> {
+			SymbolType op;
+			std::unique_ptr<Expression> lhs;
+			std::unique_ptr<Expression> rhs;
+
+			explicit BinaryExpression(const SymbolType op, std::unique_ptr<Expression> lhs, std::unique_ptr<Expression> rhs)
+				: op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 		};
 
 		struct StringLiteral : Literal<std::wstring>, Node<StringLiteral, PrintVisitor> {
