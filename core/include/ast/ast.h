@@ -5,7 +5,7 @@
 #include <memory>
 
 #include <exception.h>
-#include <symbols.h>
+#include <tokens.h>
 
 namespace seam::ast {
 	class PrintVisitor;
@@ -58,19 +58,19 @@ namespace seam::ast {
 		};
 
 		struct UnaryExpression : Expression, Node<UnaryExpression, PrintVisitor> {
-			SymbolType op;
+			TokenType op;
 			std::unique_ptr<Expression> expr;
 
-			explicit UnaryExpression(const SymbolType op, std::unique_ptr<Expression> expr)
+			explicit UnaryExpression(const TokenType op, std::unique_ptr<Expression> expr)
 				: op(op), expr(std::move(expr)) {}
 		};
 
 		struct BinaryExpression : Expression, Node<BinaryExpression, PrintVisitor> {
-			SymbolType op;
+			TokenType op;
 			std::unique_ptr<Expression> lhs;
 			std::unique_ptr<Expression> rhs;
 
-			explicit BinaryExpression(const SymbolType op, std::unique_ptr<Expression> lhs, std::unique_ptr<Expression> rhs)
+			explicit BinaryExpression(const TokenType op, std::unique_ptr<Expression> lhs, std::unique_ptr<Expression> rhs)
 				: op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 		};
 
@@ -151,6 +151,22 @@ namespace seam::ast {
 			std::wstring return_type,
 			std::unique_ptr<statement::StatementBlock> block)
 				: name(std::move(name)), params(std::move(params)), return_type(std::move(return_type)), body(std::move(block)){}
+	};
+
+	struct TypeDeclaration : Declaration, Node<TypeDeclaration, PrintVisitor> {
+        std::wstring name;
+        DeclarationList body;
+
+        TypeDeclaration(std::wstring name, DeclarationList body)
+            : name(std::move(name)), body(std::move(body)) {}
+	};
+
+	struct TypeAliasDeclaration : Declaration, Node<TypeAliasDeclaration, PrintVisitor> {
+        std::wstring alias;
+        std::wstring type;
+
+        TypeAliasDeclaration(std::wstring alias, std::wstring type)
+            : alias(std::move(alias)), type(std::move(type)) {}
 	};
 
 	struct Program : Node<Program, PrintVisitor> {

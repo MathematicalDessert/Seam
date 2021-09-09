@@ -16,9 +16,40 @@ namespace {
 }
 
 namespace seam {
-	bool is_unary_operator(const SymbolType symbol) {
+	bool is_unary_operator(const TokenType symbol) {
 		switch (symbol) {
-			case SymbolType::OpSub: {
+			case TokenType::OpSub: {
+				return true;
+			}
+			default: return false;
+		}
+	}
+
+	bool is_binary_operator(const TokenType type) {
+		switch (type) {
+			case TokenType::OpSub:
+			case TokenType::OpMul:
+			case TokenType::OpAdd: {
+				return true;
+			}
+			default: return false;
+		}
+	}
+
+	bool is_right_assoc(const TokenType type) {
+		switch (type) {
+			case TokenType::OpMul:
+			case TokenType::OpAdd: {
+				return true;
+			}
+			default: return false;
+		}
+	}
+
+	bool is_left_assoc(const TokenType type) {
+		switch (type) {
+			case TokenType::OpMul:
+			case TokenType::OpAdd: {
 				return true;
 			}
 			default: return false;
@@ -26,19 +57,19 @@ namespace seam {
 	}
 
 	std::wstring Parser::try_parse_type() {
-		expect<SymbolType::Colon>();
-		return consume_token<SymbolType::Identifier, std::wstring>();
+		expect<TokenType::Colon>();
+		return consume_token<TokenType::Identifier, std::wstring>();
 	}
 
 	ast::ParameterList Parser::parse_parameter_list() {
 		ast::ParameterList params;
 
-		expect<SymbolType::SymbOpenParen>();
+		expect<TokenType::OpenParen>();
 
-		while (lexer_->peek() == SymbolType::Identifier) {
-			const auto param_name = consume_token<SymbolType::Identifier, std::wstring>();
-			expect<SymbolType::Colon>();
-			const auto param_type = consume_token<SymbolType::Identifier, std::wstring>();
+		while (lexer_->peek() == TokenType::Identifier) {
+			const auto param_name = consume_token<TokenType::Identifier, std::wstring>();
+			expect<TokenType::Colon>();
+			const auto param_type = consume_token<TokenType::Identifier, std::wstring>();
 
 			params.emplace_back(ast::Parameter {
 				param_name,
@@ -46,7 +77,7 @@ namespace seam {
 			});
 		}
 
-		expect<SymbolType::SymbCloseParen>();
+		expect<TokenType::CloseParen>();
 		return params;
 	}
 
@@ -54,84 +85,83 @@ namespace seam {
 
 	std::unique_ptr<ast::expression::Expression> Parser::parse_primary_expression() {
 		switch (lexer_->peek()) {
-			case SymbolType::SymbOpenParen: {
-				lexer_->next();
-				auto expr = parse_primary_expression();
-				expect<SymbolType::SymbCloseParen>();
+			case TokenType::OpenParen: {
+                discard();
+				auto expr = parse_expression();
+				expect<TokenType::CloseParen>();
 				return std::move(expr);
 			}
-			case SymbolType::StringLiteral: {
-				return std::make_unique<ast::expression::StringLiteral>(consume_token<SymbolType::StringLiteral, std::wstring>());
+			case TokenType::StringLiteral: {
+				return std::make_unique<ast::expression::StringLiteral>(consume_token<TokenType::StringLiteral, std::wstring>());
 			}
-			case SymbolType::NumberLiteral: {
-				return std::make_unique<ast::expression::NumberLiteral>(consume_token<SymbolType::NumberLiteral, std::wstring>());
+			case TokenType::NumberLiteral: {
+				return std::make_unique<ast::expression::NumberLiteral>(consume_token<TokenType::NumberLiteral, std::wstring>());
 			}
-			case SymbolType::KeywordTrue:
-			case SymbolType::KeywordFalse: {
-				return std::make_unique<ast::expression::BooleanLiteral>(lexer_->next()->type == SymbolType::KeywordTrue);
+			case TokenType::KeywordTrue:
+			case TokenType::KeywordFalse: {
+				return std::make_unique<ast::expression::BooleanLiteral>(lexer_->next()->type == TokenType::KeywordTrue);
 			}
 			default:break;
 		}
 		return nullptr;
 	}
 
-	const std::unordered_map<SymbolType, size_t, HashType<SymbolType>> binary_priority {
-		{ SymbolType::OpAdd, 6 }, { SymbolType::OpSub, 6 }
+	const std::unordered_map<TokenType, size_t, HashType<TokenType>> binary_priority {
+        { TokenType::OpAdd, 6 }, { TokenType::OpSub, 6 },
+		{ TokenType::OpMul, 7 }, { TokenType::OpDiv, 7 },
 	};
-	std::unique_ptr<ast::expression::Expression> Parser::parse_expression(const size_t right_binding_power) {
+	auto get_binary_priority(const TokenType type) {
+		auto search = binary_priority.find(type);
+
+		return search != binary_priority.end() ? search->second : -1;
+	}
+
+	std::unique_ptr<ast::expression::Expression> Parser::parse_expression(std::unique_ptr<ast::expression::Expression> expr, const size_t right_binding_power) {
 		// TODO: Check is unary operator & add operator precedence
 
-		auto final_binding_power = 0;
-		std::unique_ptr<ast::expression::Expression> expr;
-		if (is_unary_operator(lexer_->peek())) {
-			auto op = lexer_->next()->type;
-			auto inner_expr = parse_expression();
+		auto next_token = lexer_->peek();
+		while (is_binary_operator(next_token) && get_binary_priority(next_token) >= right_binding_power) {
+			auto operator_token = lexer_->next();
+			auto rhs = parse_primary_expression();
 
-			expr = std::make_unique<ast::expression::UnaryExpression>(op, std::move(inner_expr));
-		} else {
-			expr = parse_primary_expression();
-		}
-
-		auto op = lexer_->peek();
-		while (true) {
-			const auto it = binary_priority.find(op);
-			final_binding_power = it->second;
-			if (it == binary_priority.cend() ? true : right_binding_power >= final_binding_power) {
-				break;
+			next_token = lexer_->peek();
+			while (is_binary_operator(next_token) 
+				&& (get_binary_priority(next_token) > get_binary_priority(operator_token->type)) 
+					|| (is_right_assoc(next_token) && get_binary_priority(next_token) == get_binary_priority(operator_token->type))) {
+					rhs = parse_expression(std::move(rhs), get_binary_priority(operator_token->type));
+					next_token = lexer_->peek();
 			}
 
-			lexer_->next(); // skip op
+			expr = std::make_unique<ast::expression::BinaryExpression>(operator_token->type, 
+				std::move(expr), std::move(rhs));
+		}
+		return std::move(expr);
+	}
 
-			auto rhs_expr = parse_expression();
-			expr = std::make_unique<ast::expression::BinaryExpression>(
-				op,
-				std::move(expr),
-				std::move(rhs_expr));
-
-			//if (!)
-			//parse_expression(final_binding_power);
-
-			const auto binding_power = last_binding_power_;
+	std::unique_ptr<ast::expression::Expression> Parser::parse_expression() {
+		if (is_unary_operator(lexer_->peek())) {
+			return std::make_unique<ast::expression::UnaryExpression>(
+				lexer_->next()->type,
+				parse_expression());
 		}
 
-		// TODO: add
-		return std::move(expr);
+		return parse_expression(parse_primary_expression());
 	}
 
 
 	std::unique_ptr<ast::statement::LetStatement> Parser::parse_let_statement() {
-		const auto var_name = consume_token<SymbolType::Identifier, std::wstring>();
+		const auto var_name = consume_token<TokenType::Identifier, std::wstring>();
 
 		// is type
 		std::wstring type;
 		switch (lexer_->peek()) {
-			case SymbolType::Colon: {
+			case TokenType::Colon: {
 				type = try_parse_type();
-				expect<SymbolType::OpAssign>();
+				expect<TokenType::OpAssign>();
 				break;
 			}
-			case SymbolType::ColonEquals: {
-				lexer_->next();
+			case TokenType::ColonEquals: {
+                discard();
 				break;
 			}
 			default: {
@@ -140,7 +170,7 @@ namespace seam {
 			}
 		}
 
-		auto expr = parse_primary_expression();
+		auto expr = parse_expression();
 
 		return std::make_unique<ast::statement::LetStatement>(var_name, type, std::move(expr));
 	}
@@ -148,9 +178,9 @@ namespace seam {
 	std::unique_ptr<ast::statement::WhileStatement> Parser::parse_while_statement() {
 		lexer_->next();
 
-		expect<SymbolType::SymbOpenParen>();
+		expect<TokenType::OpenParen>();
 		auto expr = parse_expression();
-		expect<SymbolType::SymbCloseParen>();
+		expect<TokenType::CloseParen>();
 
 		auto body = parse_statement_block();
 
@@ -162,20 +192,20 @@ namespace seam {
 	std::unique_ptr<ast::statement::IfStatement> Parser::parse_if_statement() {
 		lexer_->next(); // consume if keyword
 
-		expect<SymbolType::SymbOpenParen>();
+		expect<TokenType::OpenParen>();
 		auto expr = parse_expression();
-		expect<SymbolType::SymbCloseParen>();
+		expect<TokenType::CloseParen>();
 
 		auto if_body = parse_statement_block();
 		std::unique_ptr<ast::statement::StatementBlock> else_body;
 
-		if (lexer_->peek() == SymbolType::KeywordElseIf) {
+		if (lexer_->peek() == TokenType::KeywordElseIf) {
 			auto inner_if = parse_if_statement();
 			ast::statement::StatementList list;
 			list.emplace_back(std::move(inner_if));
 
 			else_body = std::make_unique<ast::statement::StatementBlock>(std::move(list));
-		} else if (lexer_->peek() == SymbolType::KeywordElse) {
+		} else if (lexer_->peek() == TokenType::KeywordElse) {
 			lexer_->next();
 			else_body = parse_statement_block();
 		}
@@ -188,17 +218,17 @@ namespace seam {
 
 	std::unique_ptr<ast::statement::Statement> Parser::parse_statement() {
 		switch (lexer_->peek()) {
-			case SymbolType::KeywordLet: {
+			case TokenType::KeywordLet: {
 				lexer_->next();
 				return parse_let_statement();
 			}
-			case SymbolType::SymbOpenBrace: {
+			case TokenType::OpenBrace: {
 				return parse_statement_block();
 			}
-			case SymbolType::KeywordIf: {
+			case TokenType::KeywordIf: {
 				return parse_if_statement();
 			}
-			case SymbolType::KeywordWhile: {
+			case TokenType::KeywordWhile: {
 				return parse_while_statement();
 			}
 			default: {
@@ -210,7 +240,7 @@ namespace seam {
 	std::unique_ptr<ast::statement::StatementBlock> Parser::parse_statement_block() {
 		ast::statement::StatementList body;
 
-		expect<SymbolType::SymbOpenBrace>();
+		expect<TokenType::OpenBrace>();
 
 		while (true) {
 			auto statement = parse_statement();
@@ -221,23 +251,53 @@ namespace seam {
 			body.emplace_back(std::move(statement));
 		}
 
-		expect<SymbolType::SymbCloseBrace>();
+		expect<TokenType::CloseBrace>();
 
 		return std::make_unique<ast::statement::StatementBlock>(std::move(body));
 	}
 
 	std::unique_ptr<ast::FunctionDeclaration> Parser::parse_function_declaration() {
-		const auto func_name = consume_token<SymbolType::Identifier, std::wstring>();
+		const auto func_name = consume_token<TokenType::Identifier, std::wstring>();
 		const auto param_list = parse_parameter_list();
 
 		std::wstring return_type;
-		if (lexer_->peek() == SymbolType::Arrow) {
+		if (lexer_->peek() == TokenType::Arrow) {
 			lexer_->next();
-			return_type = consume_token<SymbolType::Identifier, std::wstring>();
+			return_type = consume_token<TokenType::Identifier, std::wstring>();
 		}
 
 		auto body = parse_statement_block();
 		return std::make_unique<ast::FunctionDeclaration>(func_name, param_list, return_type, std::move(body));
+	}
+
+    std::unique_ptr<ast::Declaration> Parser::parse_type_decl() {
+	    auto name = consume_token<TokenType::Identifier, std::wstring>();
+
+	    std::unique_ptr<ast::Declaration> decl;
+	    switch (lexer_->peek()) {
+	        case TokenType::OpAssign: {
+	            expect<TokenType::OpAssign>();
+	            auto type = consume_token<TokenType::Identifier, std::wstring>();
+	            decl = std::make_unique<ast::TypeAliasDeclaration>(
+	                    std::move(name),
+	                    std::move(type)
+	                    );
+	            break;
+	        };
+	        case TokenType::OpenBrace: {
+	            expect<TokenType::OpenBrace>();
+	            auto body = parse_declaration_list();
+
+	            decl = std::make_unique<ast::TypeDeclaration>(
+	                    std::move(name),
+	                    std::move(body)
+	                    );
+	            break;
+	        };
+	        default: break;
+	    }
+
+	    return std::move(decl);
 	}
 
 	ast::DeclarationList Parser::parse_declaration_list() {
@@ -245,31 +305,37 @@ namespace seam {
 
 		while (true) {
 			switch (lexer_->peek()) {
-				case SymbolType::KeywordFn: {
-					lexer_->next(); // TODO: find better way of discarding...
+				case TokenType::KeywordFn: {
+                    discard(); // TODO: find better way of discarding...
 					body.emplace_back(parse_function_declaration());
 					break;
 				}
-				case SymbolType::KeywordType: {
+				case TokenType::KeywordType: {
+                    discard();
+				    body.emplace_back(parse_type_decl());
 					break;
 				}
-				case SymbolType::None: {
+				case TokenType::None: {
 					return body;
 				}
 				default: {
-					break;
+					auto token = lexer_->next();
+					throw generate_exception<ParserException>(
+                            token->position,
+                            L"expected declaration, got {}",
+                            token_type_to_name(token->type)
+					);
 				}
 			}
 		}
 	}
 
 	Parser::Parser(std::unique_ptr<Lexer> lexer)
-		: lexer_(std::move(lexer)) {
-		
-	}
+		: lexer_(std::move(lexer)) { }
 
 	std::unique_ptr<ast::Program> Parser::parse() {
 		if (!lexer_) {
+		    // This should actually never happen, so?
 			throw SeamException(L"no lexer found!"); // throw proper exception
 		}
 

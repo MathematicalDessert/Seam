@@ -7,18 +7,18 @@
 
 namespace seam {
 	namespace {
-		const std::unordered_map<std::wstring, SymbolType> str_to_keyword_map {
-			{ L"let", SymbolType::KeywordLet },
-			{ L"fn", SymbolType::KeywordFn },
-			{ L"type", SymbolType::KeywordType },
-			{ L"while", SymbolType::KeywordWhile },
-			{ L"for", SymbolType::KeywordFor },
-			{ L"true", SymbolType::KeywordTrue },
-			{ L"false", SymbolType::KeywordFalse },
-			{ L"import", SymbolType::KeywordImport },
-			{ L"if", SymbolType::KeywordIf },
-			{ L"else", SymbolType::KeywordElse },
-			{ L"elseif", SymbolType::KeywordElseIf }
+		const std::unordered_map<std::wstring, TokenType> str_to_keyword_map {
+			{ L"let",    TokenType::KeywordLet },
+			{ L"fn",     TokenType::KeywordFn },
+			{ L"type",   TokenType::KeywordType },
+			{ L"while",  TokenType::KeywordWhile },
+			{ L"for",    TokenType::KeywordFor },
+			{ L"true",   TokenType::KeywordTrue },
+			{ L"false",  TokenType::KeywordFalse },
+			{ L"import", TokenType::KeywordImport },
+			{ L"if",     TokenType::KeywordIf },
+			{ L"else",   TokenType::KeywordElse },
+			{ L"elseif", TokenType::KeywordElseIf }
 		};
 	}
 
@@ -63,7 +63,7 @@ namespace seam {
 		return lexeme;
 	}
 
-	SymbolType Lexer::check_next(const std::unordered_map<wchar_t, SymbolType>& map, SymbolType default_symbol) {
+	TokenType Lexer::check_next(const std::unordered_map<wchar_t, TokenType>& map, TokenType default_symbol) {
 		if (map.find(peek_character()) != map.cend()) {
 			return map.at(next_character());
 		}
@@ -116,7 +116,7 @@ namespace seam {
 			next_character();
 		}
 
-		if (const auto next_char = next_character(); is_hex && !std::iswxdigit(next_char) || !is_hex && !std::iswdigit(next_char)) {
+		if (const auto next_char = next_character(); (is_hex && !std::iswxdigit(next_char)) || (!is_hex && !std::iswdigit(next_char))) {
 			throw generate_exception<LexicalException>(
 				get_current_pos(),
 				LEX_MALFORMED_NUMBER_LITERAL);
@@ -148,7 +148,7 @@ namespace seam {
 				if (!is_float && peeked_character == '.') {
 					is_float = true;
 				} else if (!std::iswdigit(peeked_character)) {
-					if (std::iswspace(peeked_character) || peeked_character == WEOF) {
+					if (std::iswspace(peeked_character) || peeked_character == WEOF || peeked_character == ')') {
 						break;
 					}
 
@@ -165,56 +165,56 @@ namespace seam {
 
 		current_end_idx_ = source_reader_.current_pos();
 		next_token_ = std::make_unique<Token>(
-			SymbolType::NumberLiteral,
-			consume(),
-			SourcePosition{
+                TokenType::NumberLiteral,
+                consume(),
+                SourcePosition{
 				current_start_idx_,
 				current_end_idx_ - 1
 			});
 	}
 	
 	void Lexer::tokenize_symbol() {
-		SymbolType symbol;
+		TokenType symbol;
 		
-		switch (next_character()) {
+		switch (auto c = next_character()) {
 		case '+': {
 			symbol = check_next({
-				{ '+', SymbolType::OpIncrement },
-				{ '=', SymbolType::OpAddEq }},
-				SymbolType::OpAdd);
+				{ '+', TokenType::OpIncrement },
+				{ '=', TokenType::OpAddEq }},
+                                TokenType::OpAdd);
 			break;
 		}
 		case '-': {
 			symbol = check_next({
-				{ '-', SymbolType::OpDecrement },
-				{ '=', SymbolType::OpSubEq },
-				{ '>', SymbolType::Arrow }},
-				SymbolType::OpSub);
+				{ '-', TokenType::OpDecrement },
+				{ '=', TokenType::OpSubEq },
+				{ '>', TokenType::Arrow }},
+                                TokenType::OpSub);
 			break;
 		}
-		case '/': symbol = SymbolType::OpDiv; break;
-		case '*': symbol = SymbolType::OpMul; break;
-		case '(': symbol = SymbolType::SymbOpenParen; break;
-		case ')': symbol = SymbolType::SymbCloseParen; break;
-		case '{': symbol = SymbolType::SymbOpenBrace; break;
-		case '}': symbol = SymbolType::SymbCloseBrace; break;
+		case '/': symbol = TokenType::OpDiv; break;
+		case '*': symbol = TokenType::OpMul; break;
+		case '(': symbol = TokenType::OpenParen; break;
+		case ')': symbol = TokenType::CloseParen; break;
+		case '{': symbol = TokenType::OpenBrace; break;
+		case '}': symbol = TokenType::CloseBrace; break;
 		case '=': {
 			symbol = check_next({
-				{ '=', SymbolType::OpEq } },
-				SymbolType::OpAssign);
+				{ '=', TokenType::OpEq } },
+                                TokenType::OpAssign);
 			break;
 		}
 		case ':': {
 			symbol = check_next({
-				{ '=', SymbolType::ColonEquals } },
-				SymbolType::Colon);
+				{ '=', TokenType::ColonEquals } },
+                                TokenType::Colon);
 			break;
 		}
 		default: {
 			throw generate_exception<LexicalException>(
 				get_current_pos(),
 				L"unknown symbol found {}",
-				L"");
+				c);
 		}
 		}
 
@@ -251,9 +251,9 @@ namespace seam {
 				SourcePosition{ current_start_idx_, current_end_idx_ - 1 });
 		} else {
 			next_token_ = std::make_unique<Token>(
-				SymbolType::Identifier,
-				identifier,
-				SourcePosition{ current_start_idx_, current_end_idx_ - 1 });
+                    TokenType::Identifier,
+                    identifier,
+                    SourcePosition{ current_start_idx_, current_end_idx_ - 1 });
 		}
 	}
 		
@@ -265,9 +265,9 @@ namespace seam {
 		auto lexeme = read_until('"');
 
 		next_token_ = std::make_unique<Token>(
-			SymbolType::StringLiteral,
-			std::move(lexeme),
-			SourcePosition {
+                TokenType::StringLiteral,
+                std::move(lexeme),
+                SourcePosition {
 				current_start_idx_,
 				current_end_idx_ - 1
 			});
@@ -297,9 +297,9 @@ namespace seam {
 		if (!next_token_) {
 			// empty?
 			next_token_ = std::make_unique<Token>(
-				SymbolType::None,
-				L"",
-				SourcePosition{
+                    TokenType::None,
+                    L"",
+                    SourcePosition{
 					0, 0
 				});
 		}
@@ -308,7 +308,7 @@ namespace seam {
 	Lexer::Lexer(const Source* source)
 		: source_reader_(source) {}
 
-	SymbolType Lexer::peek() {
+	TokenType Lexer::peek() {
 		if (!next_token_) {
 			tokenize();
 		}

@@ -3,11 +3,13 @@
 #include <codecvt>
 #include <exception>
 #include <stdexcept>
-#include <format>
+//#include <format>
 #include <utility>
 #include <fmt/format.h>
+#include <locale>
 
 #include "source_position.h"
+#include <fmt/xchar.h>
 
 namespace seam {
 	template<class T, typename... Args>

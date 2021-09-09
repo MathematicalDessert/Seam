@@ -16,6 +16,7 @@ namespace seam {
 		
 	}
 
+	// TODO: write test!
 	wchar_t SourceReader::get_char(const size_t pos) const {
 		if (pos >= length()) {
 			return WEOF;

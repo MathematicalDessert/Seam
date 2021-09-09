@@ -8,18 +8,18 @@ namespace seam {
 		std::unique_ptr<Lexer> lexer_;
 		size_t last_binding_power_ = 0;
 		
-		template <SymbolType T>
+		template <TokenType T>
 		void expect(const bool consume = true) const {
 
-			if (const SymbolType type = lexer_->peek(); T != type) {
+			if (const TokenType type = lexer_->peek(); T != type) {
 				const auto token = lexer_->next();
 
-				constexpr auto symb_name = symbol_type_to_name_cexpr<T>();
+				constexpr auto symb_name = token_type_to_name_cexpr<T>();
 				throw generate_exception<ParserException>(
-					token->position,
-					L"expected {}, got {}",
-					symb_name,
-					symbol_type_to_name(type)
+                        token->position,
+                        L"expected {}, got {}",
+                        symb_name,
+                        token_type_to_name(type)
 					);
 			}
 
@@ -28,7 +28,7 @@ namespace seam {
 			}
 		}
 
-		template <SymbolType TT, typename T>
+		template <TokenType TT, typename T>
 		[[nodiscard]] auto consume_token() const {
 			expect<TT>(false);
 
@@ -44,11 +44,14 @@ namespace seam {
 			}
 		}
 
+		void discard() const { lexer_->next(); }
+
 		std::wstring try_parse_type();
 		ast::ParameterList parse_parameter_list();
 
 		std::unique_ptr<ast::expression::Expression> parse_primary_expression();
-		std::unique_ptr<ast::expression::Expression> parse_expression(size_t right_binding_power = 0);
+		std::unique_ptr<ast::expression::Expression> parse_expression(std::unique_ptr<ast::expression::Expression> expr, size_t right_binding_power = 0);
+		std::unique_ptr<ast::expression::Expression> parse_expression();
 
 		std::unique_ptr<ast::statement::WhileStatement> parse_while_statement();
 		std::unique_ptr<ast::statement::IfStatement> parse_if_statement();
@@ -58,6 +61,8 @@ namespace seam {
 		std::unique_ptr<ast::statement::StatementBlock> parse_statement_block();
 
 		std::unique_ptr<ast::FunctionDeclaration> parse_function_declaration();
+		std::unique_ptr<ast::Declaration> parse_type_decl();
+
 		ast::DeclarationList parse_declaration_list();
 	public:
 		Parser(std::unique_ptr<Lexer> lexer);

@@ -4,28 +4,9 @@
 #include <memory>
 
 #include "source.h"
-#include "source_position.h"
-#include "symbols.h"
+#include "tokens.h"
 
 namespace seam {
-	/**
-	 * Token Object.
-	 *
-	 * @note Immutable, this object should not be promoted
-	 * or demoted in any way.
-	 */
-	struct Token {
-		// token type
-		const SymbolType type;
-		// token lexeme
-		const std::wstring lexeme;
-		// token position
-		const SourcePosition position;
-
-		Token(const SymbolType type, std::wstring lexeme, const SourcePosition position)
-			: type(type), lexeme(std::move(lexeme)), position(position) {}
-	};
-
 	/**
 	 * Lexical Analysis Class.
 	 *
@@ -97,7 +78,7 @@ namespace seam {
 		 *
 		 * @returns symbol type.
 		 */
-		SymbolType check_next(const std::unordered_map<wchar_t, SymbolType>& map, SymbolType default_symbol);
+		TokenType check_next(const std::unordered_map<wchar_t, TokenType>& map, TokenType default_symbol);
 
 		/**
 		 * Lex a comment.
@@ -141,7 +122,7 @@ namespace seam {
 		 *
 		 * @returns peeked token.
 		 */
-		[[nodiscard]] SymbolType peek();
+		[[nodiscard]] TokenType peek();
 
 		/**
 		 * Returns next token.

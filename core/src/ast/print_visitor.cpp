@@ -1,6 +1,9 @@
 #include <ast/ast.h>
 #include <ast/print_visitor.h>
 #include <fmt/format.h>
+#include <fmt/xchar.h>
+
+// TODO: refactor this!
 
 namespace seam::ast {
 	void PrintVisitor::visit(Program& program) {
@@ -14,17 +17,18 @@ namespace seam::ast {
 	}
 
 	void PrintVisitor::visit(statement::LetStatement& stat) {
-		auto this_node = ++node_count_;
+		const auto this_node = ++node_count_;
 		auto type = !stat.type.empty() ? stat.type : L"auto";
 		append(fmt::format(LR"({} [shape=record label="{{LetStatement | {{ {} | {} }} }}"])", node_count_, type.c_str(), stat.name.c_str()));
 		stat.expr->accept(*this);
-		append(fmt::format(L"{} -> {}", node_count_ - 1, node_count_));
+		//append(fmt::format(L"{} -> {}", node_count_ - 1, node_count_));
+		append(fmt::format(L"{} -> {}", this_node, this_node + 1));
 	}
 
 	void PrintVisitor::visit(FunctionDeclaration& func) {
 		const auto current_node = ++node_count_;
 		auto type = !func.return_type.empty() ? func.return_type : L"auto";
-		append(fmt::format(LR"({} [shape=record label="{{Function Declaration | {{ {} | {} }} }}"])", node_count_, type.c_str(), func.name.c_str()));
+		append(fmt::format(LR"({} [shape=record label="{{Function Declaration | {{ {} | {} }} }}"])", current_node, type.c_str(), func.name.c_str()));
 		func.body->accept(*this);
 		append(fmt::format(L"{} -> {}", current_node, current_node + 1));
 	}
@@ -65,5 +69,22 @@ namespace seam::ast {
 
 	}
 
-	//TODO: BinaryExpr visitor
+	void PrintVisitor::visit(expression::BinaryExpression& expr) {
+		const auto current_node = ++node_count_;
+
+		append(fmt::format(LR"({} [label="{}"])", current_node, token_type_to_name(expr.op)));
+		expr.lhs->accept(*this);
+		expr.rhs->accept(*this);
+		append(fmt::format(L"{} -> {}", current_node, current_node + 1));
+		append(fmt::format(L"{} -> {}", current_node, current_node + 2));
+	}
+
+    void PrintVisitor::visit(TypeDeclaration& stat) {
+
+    }
+
+    void PrintVisitor::visit(TypeAliasDeclaration& stat) {
+
+    }
+    //TODO: BinaryExpr visitor
 }

@@ -1,4 +1,4 @@
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 #include <source.h>
 
 TEST_CASE("source reader reads next characters", "[SourceReader]") {
@@ -59,7 +59,40 @@ TEST_CASE("source reader consumes correctly", "[SourceReader]") {
 }
 
 TEST_CASE("source reader peeks correctly", "[SourceReader]") {
-	
+	const std::wstring test_source_1 = L"The quick brown fox jumped over the lazy dog";
+	const auto source = std::make_unique<seam::Source>(test_source_1);
+
+	seam::SourceReader source_reader {
+		source.get()
+	};
+
+	SECTION("peek, move, peek character") {
+		// should get first character
+		REQUIRE(source_reader.peek_char() == test_source_1[0]);
+		// should also get first character
+		REQUIRE(source_reader.next_char() == test_source_1[0]);
+		// should get second character
+		REQUIRE(source_reader.peek_char() == test_source_1[1]);
+	}
+
+	SECTION("peek at different indexes ahead") {
+		REQUIRE(source_reader.peek_char(1) == test_source_1[1]);
+	}
+
+	SECTION("peek out of bounds") {
+		REQUIRE(source_reader.peek_char(1000) == WEOF);
+	}
+}
+
+TEST_CASE("get source string from source object", "[Source]") {
+    const std::wstring test_source_1 = L"The quick brown fox jumped over the lazy dog";
+    const auto source = std::make_unique<seam::Source>(test_source_1);
+
+    seam::SourceReader source_reader {
+            source.get()
+    };
+
+    REQUIRE(source->get() == test_source_1);
 }
 
 /*

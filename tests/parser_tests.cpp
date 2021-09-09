@@ -1,16 +1,12 @@
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 #include <iostream>
 #include <parser/parser.h>
 #include <ast/print_visitor.h>
 
 TEST_CASE("test asdasdasd") {
 	const std::wstring raw_source = LR"(
-		fn test() -> none {
-			{
-				let b := true
-			}
-
-			let a: string = "asd2"
+        fn main() {
+			let a := 1 * 2 + 3
 		}
 	)";
 	const auto source = std::make_unique<seam::Source>(raw_source);

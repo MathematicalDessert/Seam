@@ -1,4 +1,4 @@
-#pragma once
+	#pragma once
 
 #include "source_position.h"
 
@@ -27,10 +27,10 @@ namespace seam {
 		Arrow, // ->
 		Colon, // :
 		ColonEquals, // :=
-		SymbOpenParen, // (
-		SymbCloseParen, // )
-		SymbOpenBrace, // {
-		SymbCloseBrace, // }
+		OpenParen, // (
+		CloseParen, // )
+		OpenBrace, // {
+		CloseBrace, // }
 		
 
 		KeywordLet,
@@ -68,10 +68,10 @@ namespace seam {
 		case TokenType::Arrow: return L"->";
 		case TokenType::Colon: return L":";
 		case TokenType::ColonEquals: return L":=";
-		case TokenType::SymbOpenParen: return L"(";
-		case TokenType::SymbCloseParen: return L")";
-		case TokenType::SymbOpenBrace: return L"{";
-		case TokenType::SymbCloseBrace: return L"}";
+		case TokenType::OpenParen: return L"(";
+		case TokenType::CloseParen: return L")";
+		case TokenType::OpenBrace: return L"{";
+		case TokenType::CloseBrace: return L"}";
 		case TokenType::KeywordLet: return L"let";
 		case TokenType::KeywordFn: return L"fn";
 		case TokenType::KeywordType: return L"type";
@@ -108,10 +108,10 @@ namespace seam {
 		case TokenType::Arrow: return L"->";
 		case TokenType::Colon: return L":";
 		case TokenType::ColonEquals: return L":=";
-		case TokenType::SymbOpenParen: return L"(";
-		case TokenType::SymbCloseParen: return L")";
-		case TokenType::SymbOpenBrace: return L"{";
-		case TokenType::SymbCloseBrace: return L"}";
+		case TokenType::OpenParen: return L"(";
+		case TokenType::CloseParen: return L")";
+		case TokenType::OpenBrace: return L"{";
+		case TokenType::CloseBrace: return L"}";
 		case TokenType::KeywordLet: return L"let";
 		case TokenType::KeywordFn: return L"fn";
 		case TokenType::KeywordType: return L"type";
