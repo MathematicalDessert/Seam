@@ -148,7 +148,7 @@ namespace seam {
 				if (!is_float && peeked_character == '.') {
 					is_float = true;
 				} else if (!std::iswdigit(peeked_character)) {
-					if (std::iswspace(peeked_character) || peeked_character == WEOF || peeked_character == ')') {
+					if (std::ispunct(peeked_character) || std::iswspace(peeked_character) || peeked_character == WEOF) {
 						break;
 					}
 
@@ -210,6 +210,7 @@ namespace seam {
                                 TokenType::Colon);
 			break;
 		}
+		case ',': symbol = TokenType::Comma; break;
 		default: {
 			throw generate_exception<LexicalException>(
 				get_current_pos(),

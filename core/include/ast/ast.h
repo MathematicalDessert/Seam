@@ -46,6 +46,8 @@ namespace seam::ast {
 	namespace expression {
 		struct Expression : virtual Node<PrintVisitor> { };
 
+		using ExpressionList = std::vector<std::unique_ptr<Expression>>;
+
 		template<typename T>
 		struct Literal : Expression, virtual Node<PrintVisitor> {
 			T value;
@@ -74,6 +76,14 @@ namespace seam::ast {
 				: op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 		};
 
+		struct PostfixExpression : Expression, Node<PostfixExpression, PrintVisitor> {
+			TokenType op;
+			std::unique_ptr<Expression> rhs;
+
+			explicit PostfixExpression(const TokenType op, std::unique_ptr<Expression> rhs)
+				: op(op), rhs(std::move(rhs)) {}
+		};
+
 		struct StringLiteral : Literal<std::wstring>, Node<StringLiteral, PrintVisitor> {
 			explicit StringLiteral(std::wstring value)
 				: Literal(std::move(value)) {}
@@ -87,6 +97,21 @@ namespace seam::ast {
 		struct BooleanLiteral : Literal<bool>, Node<BooleanLiteral, PrintVisitor> {
 			explicit BooleanLiteral(const bool value)
 				: Literal(value) {}
+		};
+
+		struct Identifier : Expression, Node<Identifier, PrintVisitor> {
+			std::wstring identifier;
+
+			explicit Identifier(std::wstring identifier)
+				: identifier(std::move(identifier)) {}
+		};
+
+		struct FunctionCall : Expression, Node<FunctionCall, PrintVisitor> {
+			std::unique_ptr<Expression> function;
+			ExpressionList args;
+
+			explicit FunctionCall(std::unique_ptr<Expression> func, ExpressionList args)
+				: function(std::move(func)), args(std::move(args)) {}
 		};
 	}
 	

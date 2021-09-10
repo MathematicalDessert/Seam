@@ -6,7 +6,9 @@
 TEST_CASE("test asdasdasd") {
 	const std::wstring raw_source = LR"(
         fn main() {
-			let a := 1 * 2 + 3
+			if (true == false) {
+				random_function(1, 2, 3)
+			}
 		}
 	)";
 	const auto source = std::make_unique<seam::Source>(raw_source);

@@ -27,6 +27,7 @@ namespace seam {
 
 	bool is_binary_operator(const TokenType type) {
 		switch (type) {
+			case TokenType::OpEq:
 			case TokenType::OpSub:
 			case TokenType::OpMul:
 			case TokenType::OpAdd: {
@@ -81,6 +82,25 @@ namespace seam {
 		return params;
 	}
 
+	ast::expression::ExpressionList Parser::parse_arg_list() {
+		ast::expression::ExpressionList args;
+
+		expect<TokenType::OpenParen>();
+
+		if (lexer_->peek() != TokenType::CloseParen) {
+			args.emplace_back(parse_expression());
+		}
+
+		while (lexer_->peek() == TokenType::Comma) {
+			discard();
+			args.emplace_back(parse_expression());
+		}
+
+		expect<TokenType::CloseParen>();
+		return std::move(args);
+	}
+
+
 	// TODO: add extra information to error exceptions
 
 	std::unique_ptr<ast::expression::Expression> Parser::parse_primary_expression() {
@@ -88,8 +108,12 @@ namespace seam {
 			case TokenType::OpenParen: {
                 discard();
 				auto expr = parse_expression();
+
 				expect<TokenType::CloseParen>();
 				return std::move(expr);
+			}
+			case TokenType::Identifier: {
+				return std::make_unique<ast::expression::Identifier>(consume_token<TokenType::Identifier, std::wstring>());
 			}
 			case TokenType::StringLiteral: {
 				return std::make_unique<ast::expression::StringLiteral>(consume_token<TokenType::StringLiteral, std::wstring>());
@@ -107,6 +131,7 @@ namespace seam {
 	}
 
 	const std::unordered_map<TokenType, size_t, HashType<TokenType>> binary_priority {
+		{ TokenType::OpEq, 5 },
         { TokenType::OpAdd, 6 }, { TokenType::OpSub, 6 },
 		{ TokenType::OpMul, 7 }, { TokenType::OpDiv, 7 },
 	};
@@ -140,12 +165,40 @@ namespace seam {
 
 	std::unique_ptr<ast::expression::Expression> Parser::parse_expression() {
 		if (is_unary_operator(lexer_->peek())) {
+			auto op = lexer_->next()->type;
+			auto expr = parse_expression();
+
 			return std::make_unique<ast::expression::UnaryExpression>(
-				lexer_->next()->type,
-				parse_expression());
+				op,
+				std::move(expr));
 		}
 
-		return parse_expression(parse_primary_expression());
+		const auto shrouded_expression = lexer_->peek() == TokenType::OpenParen;
+		auto expr = parse_primary_expression();
+
+		switch (lexer_->peek()) {
+			case TokenType::OpenParen: {
+				if (dynamic_cast<ast::expression::Identifier*>(expr.get()) || shrouded_expression) {
+					auto arg_list = parse_arg_list();
+					expr = std::make_unique<ast::expression::FunctionCall>(
+						std::move(expr),
+						std::move(arg_list)
+						);
+				}
+				break;
+			}
+			case TokenType::OpDecrement:
+			case TokenType::OpIncrement: {
+				auto op = lexer_->next()->type;
+				expr = std::make_unique<ast::expression::PostfixExpression>(
+					op,
+					std::move(expr));
+				break;
+			}
+			default: break;
+		}
+
+		return parse_expression(std::move(expr));
 	}
 
 
@@ -232,6 +285,20 @@ namespace seam {
 				return parse_while_statement();
 			}
 			default: {
+				auto expression = parse_expression();
+
+				if (dynamic_cast<ast::expression::FunctionCall*>(expression.get())) {
+					return std::make_unique<ast::statement::LetStatement>(
+						L"<DISCARD>",
+						L"<DISCARD>",
+						std::move(expression));
+				}
+
+				if (expression) {
+					throw generate_exception<ParserException>(
+						lexer_->next()->position,
+						L"expected statement, got expression");
+				}
 				return nullptr; // TODO: Set this
 			}
 		}

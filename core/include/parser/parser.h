@@ -49,6 +49,8 @@ namespace seam {
 		std::wstring try_parse_type();
 		ast::ParameterList parse_parameter_list();
 
+		ast::expression::ExpressionList parse_arg_list();
+
 		std::unique_ptr<ast::expression::Expression> parse_primary_expression();
 		std::unique_ptr<ast::expression::Expression> parse_expression(std::unique_ptr<ast::expression::Expression> expr, size_t right_binding_power = 0);
 		std::unique_ptr<ast::expression::Expression> parse_expression();

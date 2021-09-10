@@ -31,6 +31,7 @@ namespace seam {
 		CloseParen, // )
 		OpenBrace, // {
 		CloseBrace, // }
+		Comma, // ,
 		
 
 		KeywordLet,
@@ -72,6 +73,7 @@ namespace seam {
 		case TokenType::CloseParen: return L")";
 		case TokenType::OpenBrace: return L"{";
 		case TokenType::CloseBrace: return L"}";
+		case TokenType::Comma: return L",";
 		case TokenType::KeywordLet: return L"let";
 		case TokenType::KeywordFn: return L"fn";
 		case TokenType::KeywordType: return L"type";
@@ -112,6 +114,7 @@ namespace seam {
 		case TokenType::CloseParen: return L")";
 		case TokenType::OpenBrace: return L"{";
 		case TokenType::CloseBrace: return L"}";
+		case TokenType::Comma: return L",";
 		case TokenType::KeywordLet: return L"let";
 		case TokenType::KeywordFn: return L"fn";
 		case TokenType::KeywordType: return L"type";
