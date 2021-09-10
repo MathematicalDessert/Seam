@@ -1,6 +1,6 @@
 # Seam
 
-Imperiative programming language with focus on native threading, type safety, and seamless modularity.
+Imperative programming language with focus on native threading, type safety, and seamless modularity.
 
 ## What is Seam?
 
